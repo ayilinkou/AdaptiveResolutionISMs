@@ -5,6 +5,8 @@
 set(SOURCES
 Source/Core/Application.h
 Source/Core/Application.cpp
+Source/Core/Window.h
+Source/Core/Window.cpp
 )
 
 add_library(Core STATIC)
