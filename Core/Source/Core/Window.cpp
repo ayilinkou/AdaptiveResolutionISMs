@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "InputHandler.h"
 
 namespace Core {
 	Window::Window(const WindowSpec& spec)
@@ -115,17 +116,6 @@ namespace Core {
 	}
 }
 
-LRESULT MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
-{
-	switch (umsg)
-	{
-		default:
-		{
-			return DefWindowProc(hwnd, umsg, wparam, lparam);
-		}
-	}
-}
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMessage)
@@ -142,7 +132,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam)
 		}
 		default:
 		{
-			return MessageHandler(hWnd, uMessage, wParam, lParam);
+			return Core::InputHandler::MessageHandler(hWnd, uMessage, wParam, lParam);
 		}
 	}
 }
