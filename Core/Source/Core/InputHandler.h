@@ -12,7 +12,7 @@ namespace Core {
 	class InputHandler
 	{
 	private:
-		InputHandler();
+		InputHandler() {}
 
 	public:
 		static InputHandler* Init(std::function<void(Event&)> callback);

@@ -4,9 +4,13 @@
 #include "InputHandler.h"
 
 namespace Core {
+	Application* Application::s_pApp = nullptr;
+
 	Application::Application(const ApplicationSpec& spec)
 		: m_Spec(spec)
 	{
+		s_pApp = this;
+		
 		m_Window = std::make_shared<Window>(m_Spec.WinSpec);
 		m_Window->Create();
 

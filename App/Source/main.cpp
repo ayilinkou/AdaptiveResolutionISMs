@@ -1,4 +1,5 @@
 #include "Core/Application.h"
+#include "AppLayer.h"
 
 int main()
 {
@@ -12,6 +13,7 @@ int main()
 	appSpec.WinSpec.bUseVSync = false;
 
 	Core::Application app(appSpec);
+	app.PushLayer<AppLayer>();
 	app.Run();
 
 	return 0;

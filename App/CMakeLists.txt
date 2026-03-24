@@ -4,6 +4,8 @@
 
 set(SOURCES
     Source/main.cpp
+    Source/AppLayer.h
+    Source/AppLayer.cpp
 )
 
 add_executable(App)

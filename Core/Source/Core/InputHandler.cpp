@@ -4,11 +4,6 @@ namespace Core {
 	InputHandler* InputHandler::s_pInstance = nullptr;
 	std::function<void(Event&)> InputHandler::s_InputCallback = 0;
 
-	InputHandler::InputHandler()
-	{
-
-	}
-
 	InputHandler* InputHandler::Init(std::function<void(Event&)> callback)
 	{
 		if (!s_pInstance)

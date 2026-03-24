@@ -25,7 +25,8 @@ namespace Core {
 		void Run();
 		void Stop();
 
-	private:
+		static Application* Get() { return s_pApp; }
+
 		template<typename TLayer>
 			requires(std::is_base_of_v<Layer, TLayer>)
 		void PushLayer()
@@ -45,6 +46,7 @@ namespace Core {
 			return nullptr;
 		}
 
+	private:
 		void RaiseEvent(Event& e);
 
 		void UpdateAppTime();
@@ -58,5 +60,7 @@ namespace Core {
 		std::chrono::steady_clock::time_point m_LastAppTime;
 		double m_DeltaTime;
 		bool m_Running = false;
+
+		static Application* s_pApp;
 	};
 }
