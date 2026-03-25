@@ -9,6 +9,9 @@ namespace Core {
 	Application::Application(const ApplicationSpec& spec)
 		: m_Spec(spec)
 	{
+		m_FPS = 0.0;
+		m_DeltaTime = 0.0;
+
 		s_pApp = this;
 		
 		m_Window = std::make_shared<Window>(m_Spec.WinSpec);
@@ -43,6 +46,9 @@ namespace Core {
 
 			UpdateAppTime();
 
+			std::string fpsAsString = std::to_string(m_FPS);
+			SetWindowText(m_Window->GetHandle(), (m_Spec.Name + " - FPS: " + fpsAsString).c_str());
+
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnUpdate(m_DeltaTime);
 
@@ -72,6 +78,7 @@ namespace Core {
 	{
 		auto now = std::chrono::steady_clock::now();
 		m_DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(now - m_LastAppTime).count() / 1000000.0; // in seconds
+		m_FPS = 1.0 / m_DeltaTime;
 		m_LastAppTime = now;
 	}
 }

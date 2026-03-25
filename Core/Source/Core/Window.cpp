@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "InputHandler.h"
+#include "Application.h"
 
 namespace Core {
 	Window::Window(const WindowSpec& spec)
@@ -63,11 +64,13 @@ namespace Core {
 			posY = (GetSystemMetrics(SM_CYSCREEN) - ScreenHeight) / 2;
 		}
 
+		// only include top bar if not in fullscreen
+		DWORD windowTopBar = m_Spec.bFullscreen ? WS_POPUP : (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX);
 		m_hwnd = CreateWindowEx(
 			WS_EX_APPWINDOW,
 			m_Spec.Title.c_str(),
 			m_Spec.Title.c_str(),
-			WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP,
+			WS_CLIPSIBLINGS | WS_CLIPCHILDREN | windowTopBar,
 			posX, posY,
 			ScreenWidth, ScreenHeight,
 			NULL,
@@ -80,7 +83,7 @@ namespace Core {
 		SetForegroundWindow(m_hwnd);
 		SetFocus(m_hwnd);
 
-		ShowCursor(false);
+		ShowCursor(true);
 
 		RECT rect;
 		GetClientRect(m_hwnd, &rect);
@@ -127,7 +130,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam)
 		}
 		case WM_CLOSE:
 		{
-			PostQuitMessage(0);
+			Core::Application::Get()->Stop();
 			return 0;
 		}
 		default:

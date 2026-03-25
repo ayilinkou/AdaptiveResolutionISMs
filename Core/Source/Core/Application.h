@@ -59,6 +59,7 @@ namespace Core {
 		std::chrono::steady_clock::time_point m_AppStartTime;
 		std::chrono::steady_clock::time_point m_LastAppTime;
 		double m_DeltaTime;
+		double m_FPS;
 		bool m_Running = false;
 
 		static Application* s_pApp;

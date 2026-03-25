@@ -12,7 +12,6 @@ namespace Core {
 		std::string Title = "Window";
 		uint32_t Width = 1280;
 		uint32_t Height = 720;
-		bool bResizable = false;
 		bool bUseVSync = false;
 		bool bFullscreen = false;
 	};
@@ -30,6 +29,8 @@ namespace Core {
 		void Update();
 
 		bool ShouldClose() const;
+
+		HWND GetHandle() const { return m_hwnd; }
 
 	private:
 		bool bShouldClose = false;
