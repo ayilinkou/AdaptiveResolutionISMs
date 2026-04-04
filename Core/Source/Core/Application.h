@@ -7,12 +7,14 @@
 
 #include "Window.h"
 #include "Layer.h"
+#include "Renderer.h"
 
 namespace Core {
 	struct ApplicationSpec
 	{
 		std::string Name = "Application";
 		WindowSpec WinSpec;
+		RendererSpec RenderSpec;
 	};
 
 	class Application
@@ -54,6 +56,7 @@ namespace Core {
 	private:
 		ApplicationSpec m_Spec;
 		std::shared_ptr<Window> m_Window;
+		std::shared_ptr<Renderer> m_Renderer;
 		std::vector<std::unique_ptr<Layer>> m_Layers;
 
 		std::chrono::steady_clock::time_point m_AppStartTime;

@@ -10,6 +10,9 @@ int main()
 	appSpec.WinSpec.Height = 720;
 	appSpec.WinSpec.bFullscreen = false;
 	appSpec.WinSpec.bUseVSync = false;
+	appSpec.RenderSpec.NearPlane = 0.1f;
+	appSpec.RenderSpec.FarPlane = 1000.f;
+	appSpec.RenderSpec.WinSpec = appSpec.WinSpec;
 
 	Core::Application app(appSpec);
 	app.PushLayer<AppLayer>();

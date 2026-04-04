@@ -19,6 +19,10 @@ namespace Core {
 
 		std::function<void(Event&)> callback = [this](Event& e) { RaiseEvent(e); };
 		InputHandler::Init(callback);
+
+		m_Spec.RenderSpec.hwnd = m_Window->GetHandle();
+		m_Renderer = std::make_shared<Renderer>(m_Spec.RenderSpec);
+		m_Renderer->Init();
 	}
 
 	Application::~Application()
