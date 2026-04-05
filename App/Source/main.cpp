@@ -15,7 +15,7 @@ int main()
 	appSpec.RenderSpec.WinSpec = appSpec.WinSpec;
 
 	Core::Application app(appSpec);
-	app.PushLayer<AppLayer>();
+	app.PushLayer<AppLayer>("AppLayer");
 	app.Run();
 
 	return 0;

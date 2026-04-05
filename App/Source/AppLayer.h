@@ -6,8 +6,8 @@
 class AppLayer : public Core::Layer
 {
 public:
-	AppLayer() {};
-	virtual ~AppLayer() {};
+	AppLayer(const std::string& layerName) : Core::Layer(layerName) {}
+	virtual ~AppLayer() {}
 
 	virtual void OnEvent(Core::Event& e) override;
 

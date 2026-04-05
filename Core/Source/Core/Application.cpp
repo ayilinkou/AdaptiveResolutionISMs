@@ -70,6 +70,8 @@ namespace Core {
 
 	void Application::RaiseEvent(Event& e)
 	{
+		//std::println("Raising event: {}", e.ToString());
+		
 		for (auto& layer : std::views::reverse(m_Layers))
 		{
 			layer->OnEvent(e);

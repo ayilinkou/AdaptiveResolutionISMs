@@ -30,4 +30,5 @@ target_link_libraries(Core PUBLIC
 	d3d11
 	dxgi
 	d3dcompiler
+	dxguid
 )
