@@ -26,8 +26,6 @@ namespace Core {
 		void Create();
 		void Destroy();
 
-		void Update();
-
 		bool ShouldClose() const;
 
 		HWND GetHandle() const { return m_hwnd; }

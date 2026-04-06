@@ -109,10 +109,6 @@ namespace Core {
 		m_hInstance = NULL;
 	}
 
-	void Window::Update()
-	{
-	}
-
 	bool Window::ShouldClose() const
 	{
 		return bShouldClose;

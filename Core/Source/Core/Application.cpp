@@ -56,10 +56,12 @@ namespace Core {
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnUpdate(m_DeltaTime);
 
+			Renderer::Get()->BeginScene(1.f, 1.f, 1.f, 1.f);
+
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnRender(m_DeltaTime);
 
-			m_Window->Update();
+			Renderer::Get()->EndScene();
 		}
 	}
 
@@ -70,7 +72,7 @@ namespace Core {
 
 	void Application::RaiseEvent(Event& e)
 	{
-		//std::println("Raising event: {}", e.ToString());
+		std::println("{}", e.ToString());
 		
 		for (auto& layer : std::views::reverse(m_Layers))
 		{

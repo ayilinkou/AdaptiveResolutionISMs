@@ -5,8 +5,6 @@
 
 void AppLayer::OnEvent(Core::Event& event)
 {
-	std::println("{}", event.ToString());
-
 	Core::EventDispatcher dispatcher(event);
 	dispatcher.Dispatch<Core::KeyPressedEvent>([this](Core::KeyPressedEvent& e) { return OnKeyPressed(e); });
 }
