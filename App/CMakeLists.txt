@@ -6,6 +6,8 @@ set(SOURCES
     Source/main.cpp
     Source/AppLayer.h
     Source/AppLayer.cpp
+    Source/Shaders/tri.vs
+    Source/Shaders/basic.ps
 )
 
 add_executable(App)
