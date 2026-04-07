@@ -11,3 +11,4 @@ build/
 **.nsight-gfxproj
 **.DotSettings
 **.user
+App/shader-error.txt

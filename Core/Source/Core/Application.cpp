@@ -23,12 +23,18 @@ namespace Core {
 		m_Spec.RenderSpec.hwnd = m_Window->GetHandle();
 		m_Renderer = std::make_shared<Renderer>(m_Spec.RenderSpec);
 		m_Renderer->Init();
+
+		m_ResourceManager = std::make_shared<ResourceManager>(m_Window->GetHandle());
 	}
 
 	Application::~Application()
 	{
+		m_Layers.clear();
+		
+		m_ResourceManager.reset();
+		m_Renderer.reset();
 		InputHandler::Shutdown();
-		m_Window->Destroy();
+		m_Window.reset();
 	}
 
 	void Application::Run()
@@ -56,7 +62,7 @@ namespace Core {
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnUpdate(m_DeltaTime);
 
-			Renderer::Get()->BeginScene(1.f, 1.f, 1.f, 1.f);
+			Renderer::Get()->BeginScene(0.3f, 0.6f, 0.8f, 1.f);
 
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnRender(m_DeltaTime);

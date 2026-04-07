@@ -59,6 +59,14 @@ namespace Core {
 
 		D3D11_VIEWPORT m_Viewport = {};
 
+	public:
+
+		ComPtr<ID3D11Device> GetDevice() const { return m_Device; }
+		ComPtr<ID3D11DeviceContext> GetContext() const { return m_Context; }
+
+		ComPtr<ID3D11RenderTargetView> GetBackBufferRTV() const { return m_BackBufferRTV; }
+		ComPtr<ID3D11DepthStencilView> GetDSV() const { return m_DSV; }
+
 	private:
 		RendererSpec m_Spec;
 		static Renderer* s_pInstance;

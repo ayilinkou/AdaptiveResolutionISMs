@@ -15,6 +15,13 @@ set(SOURCES
 	Source/Core/Renderer.h
 	Source/Core/Renderer.cpp
 	Source/Core/MyMacros.h
+	Source/Core/ResourceManager.h
+	Source/Core/ResourceManager.cpp
+	Source/Core/Resource.h
+	Source/Core/Shader/ShaderResource.h
+	Source/Core/Shader/ShaderCreateInfo.h
+	Source/Core/Logger.h
+	Source/Core/Logger.cpp
 )
 
 add_library(Core STATIC)
