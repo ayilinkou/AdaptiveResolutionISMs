@@ -21,7 +21,8 @@ namespace Core {
 	class ResourceManager
 	{
 	public:
-		ResourceManager(HWND hwnd) : m_hWnd(hwnd) { s_Instance = this; }
+		ResourceManager(HWND hwnd, ComPtr<ID3D11Device> device)
+			: m_hWnd(hwnd), m_Device(device) { s_Instance = this; }
 		~ResourceManager();
 
 		static ResourceManager* Get() { return s_Instance; }
@@ -32,27 +33,35 @@ namespace Core {
 	public:
 		void Shutdown();
 
+		// these must NOT be stored with a ComPtr and should be unloaded using UnloadTexture when no longer needed
+		ID3D11ShaderResourceView* LoadTexture(const std::string& filepath);
 		template <typename T>
 		T* LoadShader(const std::string& filepath, const std::string& entry = "main");
 		template <typename T>
 		T* LoadShader(const std::string& filepath, const std::string& entry, ComPtr<ID3D10Blob>& bytecode);
 
+		UINT UnloadTexture(const std::string& filepath);
 		template <typename T>
 		UINT UnloadShader(const std::string& filepath, const std::string& entry = "main");
 
+		std::unordered_map<std::string, std::unique_ptr<Resource>>& GetTexturesMap() { return m_TexturesMap; }
 		std::unordered_map<std::string, std::unordered_map<std::string, std::unique_ptr<ShaderResource>>>& GetShadersMap() { return m_ShadersMap; }
 
 	private:
+		ID3D11ShaderResourceView* Internal_LoadTexture(const char* filepath);
 		template <typename T>
 		T* Internal_LoadShader(const char* filepath, const char* entry, ComPtr<ID3D10Blob>& bytecode);
 
+		void Internal_UnloadTexture(const std::string& filepath);
 		template <typename T>
 		void Internal_UnloadShader(const std::string& filepath, const std::string& entry);
 
 	private:
+		std::unordered_map<std::string, std::unique_ptr<Resource>> m_TexturesMap;
 		std::unordered_map<std::string, std::unordered_map<std::string, std::unique_ptr<ShaderResource>>> m_ShadersMap;
 
 		const HWND m_hWnd;
+		ComPtr<ID3D11Device> m_Device;
 	};
 
 	template<typename T>

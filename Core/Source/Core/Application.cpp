@@ -25,8 +25,7 @@ namespace Core {
 		m_Renderer = std::make_shared<Renderer>(m_Spec.RenderSpec);
 		m_Renderer->Init();
 
-		m_ResourceManager = std::make_shared<ResourceManager>(m_Window->GetHandle());
-
+		m_ResourceManager = std::make_shared<ResourceManager>(m_Window->GetHandle(), m_Renderer->GetDevice());
 
 		float fieldOfView = 3.141592654f / 4.f;
 		float aspectRatio = (float)m_Spec.WinSpec.Width / (float)m_Spec.WinSpec.Height;

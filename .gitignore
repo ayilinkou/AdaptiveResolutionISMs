@@ -12,3 +12,6 @@ build/
 **.DotSettings
 **.user
 App/shader-error.txt
+
+# Renderdoc
+*.cap

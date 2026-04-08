@@ -1,0 +1,2 @@
+# Ignore vendored third-party code for language stats
+Core/Source/Vendor/** linguist-vendored
