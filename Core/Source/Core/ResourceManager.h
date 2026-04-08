@@ -14,6 +14,7 @@
 #include "Renderer.h"
 #include "MyMacros.h"
 #include "Logger.h"
+#include "Utility.h"
 
 namespace Core {
 	using namespace Microsoft::WRL;
@@ -137,10 +138,7 @@ namespace Core {
 		ComPtr<ID3D10Blob> errorMessage;
 
 		std::wstring wideString;
-		int sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, filepath, -1, nullptr, 0);
-		wideString.resize(sizeNeeded - 1);
-		MultiByteToWideChar(CP_UTF8, 0, filepath, -1, &wideString[0], sizeNeeded);
-
+		StaticUtils::ToWideString(filepath, wideString);
 		const WCHAR* wideFilepath = wideString.c_str();
 
 		UINT compileFlags = D3D10_SHADER_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;

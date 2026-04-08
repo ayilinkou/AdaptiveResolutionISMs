@@ -1,0 +1,7 @@
+{
+	"name": "adaptive-resolution-isms",
+	"version-string": "0.1.0",
+	"dependencies": [
+		"directxtex"
+	]
+}

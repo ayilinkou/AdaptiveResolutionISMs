@@ -25,9 +25,13 @@ set(SOURCES
 	Source/Core/Camera.h
 	Source/Core/Camera.cpp
 	Source/Core/Transform.h
+	Source/Core/Utility.h
 )
 
 add_library(Core STATIC)
+
+# Add dependencies
+find_package(directxtex CONFIG REQUIRED)
 
 target_sources(Core PRIVATE ${SOURCES})
 
@@ -35,6 +39,10 @@ target_sources(Core PRIVATE ${SOURCES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SOURCES})
 
 target_include_directories(Core PUBLIC "Source")
+
+target_link_libraries(Core PRIVATE
+	Microsoft::DirectXTex
+)
 
 target_link_libraries(Core PUBLIC
 	d3d11

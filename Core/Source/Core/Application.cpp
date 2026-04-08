@@ -15,6 +15,9 @@ namespace Core {
 
 		s_pApp = this;
 		
+		HRESULT hResult;
+		ASSERT_NOT_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+
 		m_Window = std::make_shared<Window>(m_Spec.WinSpec);
 		m_Window->Create();
 
