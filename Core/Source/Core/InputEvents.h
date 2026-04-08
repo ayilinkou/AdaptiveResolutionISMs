@@ -49,4 +49,26 @@ namespace Core {
 
 		EVENT_CLASS_TYPE(KeyReleased)
 	};
+
+	class MouseMovedEvent : public Event
+	{
+	public:
+		MouseMovedEvent(double x, double y)
+			: m_MouseX(x), m_MouseY(y) {
+		}
+
+		double GetX() const { return m_MouseX; }
+		double GetY() const { return m_MouseY; }
+
+		std::string ToString() const override
+		{
+			return std::format("MouseMovedEvent: {}, {}", m_MouseX, m_MouseY);
+		}
+
+		EVENT_CLASS_TYPE(MouseMoved)
+
+	private:
+		double m_MouseX;
+		double m_MouseY;
+	};
 }

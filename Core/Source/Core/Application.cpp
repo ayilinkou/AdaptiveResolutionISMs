@@ -11,6 +11,7 @@ namespace Core {
 	{
 		m_FPS = 0.0;
 		m_DeltaTime = 0.0;
+		m_AppTime = 0.0;
 
 		s_pApp = this;
 		
@@ -18,13 +19,19 @@ namespace Core {
 		m_Window->Create();
 
 		std::function<void(Event&)> callback = [this](Event& e) { RaiseEvent(e); };
-		InputHandler::Init(callback);
+		InputHandler::Init(callback, m_Window->GetHandle());
 
 		m_Spec.RenderSpec.hwnd = m_Window->GetHandle();
 		m_Renderer = std::make_shared<Renderer>(m_Spec.RenderSpec);
 		m_Renderer->Init();
 
 		m_ResourceManager = std::make_shared<ResourceManager>(m_Window->GetHandle());
+
+
+		float fieldOfView = 3.141592654f / 4.f;
+		float aspectRatio = (float)m_Spec.WinSpec.Width / (float)m_Spec.WinSpec.Height;
+		DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, aspectRatio, m_Spec.RenderSpec.NearPlane, m_Spec.RenderSpec.FarPlane);
+		m_Camera = std::make_shared<Camera>(proj, m_Spec.RenderSpec.NearPlane, m_Spec.RenderSpec.FarPlane);
 	}
 
 	Application::~Application()
@@ -59,6 +66,9 @@ namespace Core {
 			std::string fpsAsString = std::to_string(m_FPS);
 			SetWindowText(m_Window->GetHandle(), (m_Spec.Name + " - FPS: " + fpsAsString).c_str());
 
+			m_Camera->CalcViewMatrix();
+			Renderer::Get()->UpdateGlobalConstantBuffer(m_Camera.get(), (float)m_AppTime);
+
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnUpdate(m_DeltaTime);
 
@@ -78,8 +88,9 @@ namespace Core {
 
 	void Application::RaiseEvent(Event& e)
 	{
+#if _DEBUG
 		std::println("{}", e.ToString());
-		
+#endif
 		for (auto& layer : std::views::reverse(m_Layers))
 		{
 			layer->OnEvent(e);
@@ -94,5 +105,6 @@ namespace Core {
 		m_DeltaTime = std::chrono::duration_cast<std::chrono::microseconds>(now - m_LastAppTime).count() / 1000000.0; // in seconds
 		m_FPS = 1.0 / m_DeltaTime;
 		m_LastAppTime = now;
+		m_AppTime = std::chrono::duration_cast<std::chrono::microseconds>(now - m_AppStartTime).count() / 1000000.0;
 	}
 }

@@ -2,6 +2,7 @@
 
 #include "Renderer.h"
 #include "MyMacros.h"
+#include "Camera.h"
 
 namespace Core {
 	Renderer* Renderer::s_pInstance = nullptr;
@@ -12,7 +13,7 @@ namespace Core {
 	{
 		s_pInstance = this;
 		m_Spec = spec;
-		m_ScreenAspect = 0.f;
+		m_GlobalCBufferData = {};
 	}
 
 	Renderer::~Renderer()
@@ -207,6 +208,14 @@ namespace Core {
 		QueryDesc.Query = D3D11_QUERY_PIPELINE_STATISTICS;
 		ASSERT_NOT_FAILED(m_Device->CreateQuery(&QueryDesc, &m_PipelineStatsQuery));
 		NAME_D3D_RESOURCE(m_PipelineStatsQuery, "Pipeline stats query");
+
+		CreateGlobalConstantBuffer();
+		m_Context->VSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
+		m_Context->HSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
+		m_Context->DSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
+		m_Context->GSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
+		m_Context->PSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
+		m_Context->CSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
 	}
 
 	void Renderer::Shutdown()
@@ -325,5 +334,36 @@ namespace Core {
 		}
 		
 		return out;
+	}
+
+	void Renderer::CreateGlobalConstantBuffer()
+	{
+		HRESULT hResult;
+		D3D11_BUFFER_DESC desc = {};
+		desc.ByteWidth = sizeof(GlobalCBuffer);
+		desc.Usage = D3D11_USAGE_DYNAMIC;
+		desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+		ASSERT_NOT_FAILED(m_Device->CreateBuffer(&desc, nullptr, &m_GlobalCBuffer));
+		NAME_D3D_RESOURCE(m_GlobalCBuffer, "Global constant buffer");
+	}
+
+	void Renderer::UpdateGlobalConstantBuffer(Camera* activeCamera, float appTime)
+	{
+		m_GlobalCBufferData.CameraData.View = DirectX::XMMatrixTranspose(activeCamera->GetViewMatrix());
+		m_GlobalCBufferData.CameraData.Proj = DirectX::XMMatrixTranspose(activeCamera->GetProjMatrix());
+		m_GlobalCBufferData.CameraData.CameraPos = activeCamera->GetPosition();
+		m_GlobalCBufferData.NearZ = activeCamera->GetNearZ();
+		m_GlobalCBufferData.FarZ = activeCamera->GetFarZ();
+		m_GlobalCBufferData.Time = appTime;
+		m_GlobalCBufferData.ScreenWidth = m_Spec.WinSpec.Width;
+		m_GlobalCBufferData.ScreenHeight = m_Spec.WinSpec.Height;
+
+		HRESULT hResult;
+		D3D11_MAPPED_SUBRESOURCE mappedSubresource = {};
+		ASSERT_NOT_FAILED(m_Context->Map(m_GlobalCBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mappedSubresource));
+		memcpy(mappedSubresource.pData, &m_GlobalCBufferData, sizeof(GlobalCBuffer));
+		m_Context->Unmap(m_GlobalCBuffer.Get(), 0u);
 	}
 }

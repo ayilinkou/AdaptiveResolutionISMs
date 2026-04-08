@@ -15,7 +15,7 @@ namespace Core {
 		InputHandler() {}
 
 	public:
-		static InputHandler* Init(std::function<void(Event&)> callback);
+		static InputHandler* Init(std::function<void(Event&)> callback, HWND hwnd);
 		static void Shutdown();
 		
 		static void HandleInputs();
@@ -24,10 +24,17 @@ namespace Core {
 		static LRESULT MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
 
 	private:
+		static void ProcessMouseMovement();
+		
 		static void RaiseEvent(Event& e);
 
 	private:
 		static InputHandler* s_pInstance;
 		static std::function<void(Event&)> s_InputCallback;
+
+		static HWND s_hwnd;
+		static POINT s_Center;
+		static double s_MouseDeltaX;
+		static double s_MouseDeltaY;
 	};
 }

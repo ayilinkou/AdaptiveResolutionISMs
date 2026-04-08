@@ -57,8 +57,8 @@ void AppLayer::Init()
 	NAME_D3D_RESOURCE(m_VertexBuffer, "Test vertex buffer");
 
 	ComPtr<ID3D10Blob> vsBuffer;
-	m_vShaderPath = "C:/Dev/AdaptiveResolutionISMs/App/Source/Shaders/tri.vs"; // TODO: change to relative path
-	m_pShaderPath = "C:/Dev/AdaptiveResolutionISMs/App/Source/Shaders/basic.ps";
+	m_vShaderPath = "Source/Shaders/tri.hlsl";
+	m_pShaderPath = "Source/Shaders/basic.hlsl";
 	m_VertexShader = Core::ResourceManager::Get()->LoadShader<ID3D11VertexShader>(m_vShaderPath, "main", vsBuffer);
 	m_PixelShader = Core::ResourceManager::Get()->LoadShader<ID3D11PixelShader>(m_pShaderPath);
 
@@ -83,10 +83,12 @@ void AppLayer::OnEvent(Core::Event& event)
 {
 	Core::EventDispatcher dispatcher(event);
 	dispatcher.Dispatch<Core::KeyPressedEvent>([this](Core::KeyPressedEvent& e) { return OnKeyPressed(e); });
+	dispatcher.Dispatch<Core::MouseMovedEvent>([this](Core::MouseMovedEvent& e) { return OnMouseMoved(e); });
 }
 
 void AppLayer::OnUpdate(double dt)
 {
+	ApplyCameraMovement();
 }
 
 void AppLayer::OnRender(double dt)
@@ -113,6 +115,7 @@ void AppLayer::OnRender(double dt)
 
 bool AppLayer::OnKeyPressed(Core::KeyPressedEvent& e)
 {
+	// These key presses include the delay before repeating. For smooth keyboard inputs, use GetAsyncKeyState() instead.
 	switch (e.GetKeyCode())
 	{
 	case VK_ESCAPE:
@@ -121,4 +124,36 @@ bool AppLayer::OnKeyPressed(Core::KeyPressedEvent& e)
 	default:
 		return false;
 	}
+}
+
+bool AppLayer::OnMouseMoved(Core::MouseMovedEvent& e)
+{
+	Core::Application::Get()->GetCamera()->RotateCamera((float)e.GetX(), (float)e.GetY());
+	return true;
+}
+
+void AppLayer::ApplyCameraMovement()
+{	
+	// bit 0x8000 signals if the key is currently down
+	DirectX::XMFLOAT3 movementInputVector = {};
+	float qeVector = 0.f;
+	if (GetAsyncKeyState('W') & 0x8000)
+		movementInputVector.z += 1.f;
+	if (GetAsyncKeyState('S') & 0x8000)
+		movementInputVector.z -= 1.f;
+	if (GetAsyncKeyState('A') & 0x8000)
+		movementInputVector.x -= 1.f;
+	if (GetAsyncKeyState('D') & 0x8000)
+		movementInputVector.x += 1.f;
+	if (GetAsyncKeyState('Q') & 0x8000)
+		qeVector -= 1.f;
+	if (GetAsyncKeyState('E') & 0x8000)
+		qeVector += 1.f;
+
+	constexpr DirectX::XMFLOAT3 zeroVector = {};
+	if (memcmp(&zeroVector, &movementInputVector, sizeof(DirectX::XMFLOAT3)) == 0 && qeVector == 0.f)
+		return;
+	
+	Core::Application::Get()->GetCamera()->MoveCamera(movementInputVector, qeVector);
+	movementInputVector = {};
 }

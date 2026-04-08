@@ -22,6 +22,9 @@ set(SOURCES
 	Source/Core/Shader/ShaderCreateInfo.h
 	Source/Core/Logger.h
 	Source/Core/Logger.cpp
+	Source/Core/Camera.h
+	Source/Core/Camera.cpp
+	Source/Core/Transform.h
 )
 
 add_library(Core STATIC)

@@ -3,6 +3,7 @@
 #include "wrl.h"
 
 #include "d3d11.h"
+#include "DirectXMath.h"
 
 #include "Core/Layer.h"
 #include "Core/InputEvents.h"
@@ -25,6 +26,9 @@ private:
 	void Shutdown();
 
 	bool OnKeyPressed(Core::KeyPressedEvent& e);
+	bool OnMouseMoved(Core::MouseMovedEvent& e);
+
+	void ApplyCameraMovement();
 
 private:
 	ComPtr<ID3D11Buffer> m_IndexBuffer;

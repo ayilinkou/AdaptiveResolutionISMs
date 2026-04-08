@@ -83,7 +83,7 @@ namespace Core {
 		SetForegroundWindow(m_hwnd);
 		SetFocus(m_hwnd);
 
-		ShowCursor(true);
+		ShowCursor(false);
 
 		RECT rect;
 		GetClientRect(m_hwnd, &rect);

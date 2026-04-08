@@ -8,7 +8,8 @@ namespace Core {
 	{
 		None = 0,
 		KeyPressed,
-		KeyReleased
+		KeyReleased,
+		MouseMoved
 	};
 
 

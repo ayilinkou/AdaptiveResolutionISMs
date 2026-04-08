@@ -1,14 +1,38 @@
 #pragma once
 
 #include "d3d11.h"
+#include "DirectXMath.h"
 
 #include "wrl.h"
 
 #include "Window.h"
 
+
 namespace Core {
+
+	class Camera;
+
 	using namespace Microsoft::WRL;
 	
+	struct CameraBuffer
+	{
+		DirectX::XMMATRIX View;
+		DirectX::XMMATRIX Proj;
+		DirectX::XMFLOAT3 CameraPos;
+		float Padding;
+	};
+
+	struct GlobalCBuffer
+	{
+		CameraBuffer CameraData;
+		UINT ScreenWidth;
+		UINT ScreenHeight;
+		float NearZ;
+		float FarZ;
+		float Time;
+		DirectX::XMFLOAT3 Padding;
+	};
+
 	struct RendererSpec
 	{
 		float NearPlane;
@@ -56,8 +80,14 @@ namespace Core {
 		ComPtr<ID3D11RasterizerState> m_RasterStateBackFaceCullOff;
 		ComPtr<ID3D11SamplerState> m_SamplerLinear;
 		ComPtr<ID3D11Query> m_PipelineStatsQuery;
+		ComPtr<ID3D11Buffer> m_GlobalCBuffer;
+
 
 		D3D11_VIEWPORT m_Viewport = {};
+
+	private:
+		void CreateGlobalConstantBuffer();
+		void UpdateGlobalConstantBuffer(Camera* ActiveCamera, float appTime);
 
 	public:
 
@@ -71,6 +101,8 @@ namespace Core {
 		RendererSpec m_Spec;
 		static Renderer* s_pInstance;
 
-		float m_ScreenAspect;
+		GlobalCBuffer m_GlobalCBufferData;
+
+		friend class Application;
 	};
 }

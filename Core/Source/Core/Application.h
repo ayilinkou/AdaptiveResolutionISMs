@@ -9,6 +9,7 @@
 #include "Layer.h"
 #include "Renderer.h"
 #include "ResourceManager.h"
+#include "Camera.h"
 
 namespace Core {
 	struct ApplicationSpec
@@ -49,6 +50,9 @@ namespace Core {
 			return nullptr;
 		}
 
+		std::shared_ptr<Camera> GetCamera() { return m_Camera; }
+		double GetDeltaTime() const { return m_DeltaTime; }
+
 	private:
 		void RaiseEvent(Event& e);
 
@@ -59,10 +63,12 @@ namespace Core {
 		std::shared_ptr<Window> m_Window;
 		std::shared_ptr<Renderer> m_Renderer;
 		std::shared_ptr<ResourceManager> m_ResourceManager;
+		std::shared_ptr<Camera> m_Camera;
 		std::vector<std::unique_ptr<Layer>> m_Layers;
 
 		std::chrono::steady_clock::time_point m_AppStartTime;
 		std::chrono::steady_clock::time_point m_LastAppTime;
+		double m_AppTime;
 		double m_DeltaTime;
 		double m_FPS;
 		bool m_Running = false;

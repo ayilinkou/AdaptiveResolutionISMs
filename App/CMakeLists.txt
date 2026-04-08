@@ -6,16 +6,26 @@ set(SOURCES
     Source/main.cpp
     Source/AppLayer.h
     Source/AppLayer.cpp
-    Source/Shaders/tri.vs
-    Source/Shaders/basic.ps
 )
+
+set(SHADER_FILES
+    Source/Shaders/GlobalCBuffer.hlsl
+    Source/Shaders/basic.hlsl
+    Source/Shaders/tri.hlsl
+)
+
+set_property(SOURCE ${SHADER_FILES} PROPERTY VS_SETTINGS "ExcludedFromBuild=true")
 
 add_executable(App)
 
-target_sources(App PRIVATE ${SOURCES})
+target_sources(App PRIVATE
+    ${SOURCES}
+    ${SHADER_FILES}
+)
 
 # Match VS filters to directory structure on disk
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SOURCES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SHADER_FILES})
 
 target_link_libraries(App Core)
 
