@@ -12,12 +12,12 @@
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
 
-#include "Renderer/ModelData.h"
-#include "Renderer/Node.h"
-#include "Renderer/Texture.h"
-#include "Renderer/TextureData.h"
-#include "MyMacros.h"
-#include "Utility.h"
+#include "Core/Model/ModelData.h"
+#include "Core/Model/Node.h"
+#include "Core/Renderer/Texture.h"
+#include "Core/Renderer/TextureData.h"
+#include "Core/Utility/MyMacros.h"
+#include "Core/Utility/Utility.h"
 
 namespace Core::Loaders {
 	class TextureLoader
@@ -27,7 +27,7 @@ namespace Core::Loaders {
 
 		friend class ResourceManager;
 
-		static TextureData* Load(const char* filepath, ID3D11Device* device)
+		static TextureData* Load(const char* filepath, ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 		{
 			HRESULT hResult;
 			ComPtr<ID3D11Texture2D> texture;
@@ -101,10 +101,9 @@ namespace Core::Loaders {
 					finalMeta = metadata;
 				}
 
-				// TODO: this will make all mipmaps, but I'm probably not going to use them anytime soon
 				ComPtr<ID3D11Resource> resource;
 				ASSERT_NOT_FAILED(DirectX::CreateTextureEx(
-					device,
+					pDevice,
 					finalImage.GetImages(),
 					finalImage.GetImageCount(),
 					finalMeta,
@@ -131,11 +130,12 @@ namespace Core::Loaders {
 				D3D11_TEXTURE2D_DESC texDesc = {};
 				texDesc.Width = width;
 				texDesc.Height = height;
-				texDesc.MipLevels = 1;
+				texDesc.MipLevels = 0; // generate all mip levels
 				texDesc.ArraySize = 1;
 				texDesc.SampleDesc.Count = 1;
-				texDesc.Usage = D3D11_USAGE_IMMUTABLE;
-				texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+				texDesc.Usage = D3D11_USAGE_DEFAULT;
+				texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET; // RT bind needed to generate mips
+				texDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
 				switch (channels)
 				{
@@ -172,11 +172,8 @@ namespace Core::Loaders {
 				}
 				}
 
-				D3D11_SUBRESOURCE_DATA initData = {};
-				initData.pSysMem = imageDataRgba;
-				initData.SysMemPitch = width * channels;
-
-				ASSERT_NOT_FAILED(device->CreateTexture2D(&texDesc, &initData, &texture));
+				ASSERT_NOT_FAILED(pDevice->CreateTexture2D(&texDesc, nullptr, &texture));
+				pContext->UpdateSubresource(texture.Get(), 0u, nullptr, imageDataRgba, width* channels, 0u);
 
 				if (bNeedsAlpha)
 				{
@@ -186,10 +183,13 @@ namespace Core::Loaders {
 			}
 
 			ID3D11ShaderResourceView* textureView = nullptr;
-			ASSERT_NOT_FAILED(device->CreateShaderResourceView(texture.Get(), nullptr, &textureView));
+			ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(texture.Get(), nullptr, &textureView));
 
 			NAME_D3D_RESOURCE(texture, (std::string(filepath) + " texture").c_str());
 			NAME_D3D_RESOURCE(textureView, (std::string(filepath) + " texture SRV").c_str());
+
+			if (!bUseDirectXTex)
+				pContext->GenerateMips(textureView);
 
 			return new TextureData(filepath, textureView);
 		}
@@ -219,11 +219,10 @@ namespace Core::Loaders {
 			std::vector<Material> materials = LoadMaterials(scene, texturesRoot);
 			
 			Node* rootNode = new Node(nullptr, nullptr); // TODO: convert to unique_ptr and move into pModelData
-			ModelData* pModelData = new ModelData(modelPath, texturesRoot, std::move(materials), rootNode, scene->mNumMeshes);
+			ModelData* pModelData = new ModelData(modelPath, texturesRoot, scene->mName.C_Str(), std::move(materials), rootNode, scene->mNumMeshes);
 			rootNode->SetModelData(pModelData);
-			rootNode->ProcessNode(scene->mRootNode, scene);
-			pModelData->CreateBuffers();
-			pModelData->ReleaseIndexAndVertexArrays();
+			rootNode->ProcessNode(scene->mRootNode, scene, DirectX::XMMatrixIdentity());
+			pModelData->Init();
 			return pModelData;
 		}
 

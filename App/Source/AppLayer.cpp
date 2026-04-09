@@ -1,15 +1,9 @@
 #include <print>
 
 #include "AppLayer.h"
-#include "Core/Application.h"
+#include "Core/Application/Application.h"
 #include "Core/Renderer/Renderer.h"
-#include "Core/ResourceManager.h"
-#include "Core/MyMacros.h"
-#include "Core/Shader/ShaderProgram.h"
-
-#include "Core/Renderer/Model.h"
-#include "Core/Renderer/ModelData.h"
-#include "Core/Renderer/Texture.h"
+#include "Core/Resource/ResourceManager.h"
 
 AppLayer::AppLayer(const std::string& layerName)
 	: Core::Layer(layerName)
@@ -24,38 +18,13 @@ AppLayer::~AppLayer()
 
 void AppLayer::Init()
 {
-	HRESULT hResult;
-	ID3D11DeviceContext* context = Core::Renderer::Get()->GetContext().Get();
-	ID3D11Device* device = Core::Renderer::Get()->GetDevice().Get();
+	m_EmeraldSquare = std::make_unique<Core::Model>("Models/EmeraldSquare_v4_1/EmeraldSquare_Day.fbx", "Models/EmeraldSquare_v4_1");
+	//m_EmeraldSquare = std::make_unique<Core::Model>("Models/EmeraldSquare_v4_1/EmeraldSquare_Dusk.fbx", "Models/EmeraldSquare_v4_1");
+	//m_Bistro = std::make_unique<Core::Model>("Models/Bistro_v5_2/BistroExterior.fbx", "Models/Bistro_v5_2");
+	//m_Bistro = std::make_unique<Core::Model>("Models/Bistro_v5_2/BistroInterior.fbx", "Models/Bistro_v5_2");
+	//m_Bistro = std::make_unique<Core::Model>("Models/Bistro_v5_2/BistroInterior_Wine.fbx", "Models/Bistro_v5_2");
 
-	Core::ShaderProgramDesc desc;
-	desc.Vertex.Filepath = "Source/Shaders/BasicVS.hlsl";
-	desc.Pixel.Filepath = "Source/Shaders/BasicPS.hlsl";
-	m_TestShaderProgram = std::make_unique<Core::ShaderProgram>(desc);
-
-	D3D11_INPUT_ELEMENT_DESC vertexLayoutElements[3] = {};
-	vertexLayoutElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	vertexLayoutElements[0].SemanticName = "POSITION";
-	vertexLayoutElements[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	vertexLayoutElements[0].AlignedByteOffset = 0;
-
-	vertexLayoutElements[1].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	vertexLayoutElements[1].SemanticName = "NORMAL";
-	vertexLayoutElements[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	vertexLayoutElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-
-	vertexLayoutElements[2].Format = DXGI_FORMAT_R32G32_FLOAT;
-	vertexLayoutElements[2].SemanticName = "TEXCOORD";
-	vertexLayoutElements[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	vertexLayoutElements[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-
-	UINT numElements = _countof(vertexLayoutElements);
-
-	ASSERT_NOT_FAILED(device->CreateInputLayout(vertexLayoutElements, numElements, m_TestShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
-		m_TestShaderProgram->GetVertexShaderBlob()->GetBufferSize(), &m_TestInputLayout));
-	NAME_D3D_RESOURCE(m_TestInputLayout, "Test input layout");
-
-	m_Sword = std::make_unique<Core::Model>("Models/fantasy_sword_stylized/scene.gltf", "Models/fantasy_sword_stylized");
+	m_RenderQueue = std::make_unique<Core::RenderQueue>();
 }
 
 void AppLayer::Shutdown()
@@ -72,6 +41,8 @@ void AppLayer::OnEvent(Core::Event& event)
 void AppLayer::OnUpdate(double dt)
 {
 	ApplyCameraMovement();
+
+	m_RenderQueue->PopulateRenderQueue();
 }
 
 void AppLayer::OnRender(double dt)
@@ -79,13 +50,9 @@ void AppLayer::OnRender(double dt)
 	Core::Renderer* renderer = Core::Renderer::Get();
 	ID3D11DeviceContext* context = renderer->GetContext().Get();
 
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	context->OMSetRenderTargets(1u, renderer->GetBackBufferRTV().GetAddressOf(), renderer->GetDSV().Get());
 
-	context->IASetInputLayout(m_TestInputLayout.Get());
-	context->VSSetShader(m_TestShaderProgram->GetVertexShader(), nullptr, 0u);
-	context->PSSetShader(m_TestShaderProgram->GetPixelShader(), nullptr, 0u);
-	m_Sword->GetModelData()->TestDraw();
+	m_RenderQueue->Render();
 }
 
 bool AppLayer::OnKeyPressed(Core::KeyPressedEvent& e)

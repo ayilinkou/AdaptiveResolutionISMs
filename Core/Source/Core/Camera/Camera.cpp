@@ -1,5 +1,5 @@
 #include "Camera.h"
-#include "Application.h"
+#include "Core/Application/Application.h"
 
 namespace Core {
 	Camera::Camera(const DirectX::XMMATRIX& proj, float nearZ, float farZ)

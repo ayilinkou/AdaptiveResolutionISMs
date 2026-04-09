@@ -6,7 +6,7 @@
 
 #include "Windows.h"
 
-#include "InputEvents.h"
+#include "Core/Event/InputEvents.h"
 
 namespace Core {
 	class InputHandler

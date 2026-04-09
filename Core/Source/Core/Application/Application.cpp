@@ -1,8 +1,8 @@
 #include <ranges>
 
 #include "Application.h"
-#include "InputHandler.h"
-#include "Logger.h"
+#include "Core/Input/InputHandler.h"
+#include "Core/Utility/Logger.h"
 
 namespace Core {
 	Application* Application::s_pApp = nullptr;
@@ -31,7 +31,8 @@ namespace Core {
 		m_Renderer = std::make_shared<Renderer>(m_Spec.RenderSpec);
 		m_Renderer->Init();
 
-		m_ResourceManager = std::make_shared<ResourceManager>(m_Window->GetHandle(), m_Renderer->GetDevice());
+		m_ResourceManager = std::make_shared<ResourceManager>(m_Window->GetHandle(), m_Renderer->GetDevice(), m_Renderer->GetContext());
+		m_Renderer->CreateModelInputLayoutAndShaderProgram();
 
 		float fieldOfView = 3.141592654f / 4.f;
 		float aspectRatio = (float)m_Spec.WinSpec.Width / (float)m_Spec.WinSpec.Height;
@@ -43,6 +44,8 @@ namespace Core {
 	{
 		m_Layers.clear();
 		
+		m_Renderer->ReleaseModelShaderProgram();
+
 		m_ResourceManager.reset();
 		m_Renderer.reset();
 		InputHandler::Shutdown();

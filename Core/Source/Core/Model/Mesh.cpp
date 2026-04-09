@@ -2,7 +2,7 @@
 
 #include "Mesh.h"
 #include "ModelData.h"
-#include "Vertex.h"
+#include "Core/Renderer/Vertex.h"
 
 namespace Core {
 	void Mesh::Init(ModelData* pModelData, aiMesh* mesh)

@@ -16,5 +16,7 @@ build/
 *.cap
 
 App/shader-error.txt
-App/Models/**
 /temp
+
+# Ignore models
+App/Models/**

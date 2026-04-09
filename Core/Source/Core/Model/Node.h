@@ -14,25 +14,24 @@ typedef unsigned int UINT;
 
 namespace Core {	
 	class ModelData;
-	
+	class Mesh;
+
 	class Node
 	{
 	public:
 		Node(ModelData* pModelData, Node* pParentNode)
 			: m_pModelData(pModelData), m_ParentNode(pParentNode) {}
 
-		void ProcessNode(aiNode* modelNode, const aiScene* scene);
+		void ProcessNode(aiNode* modelNode, const aiScene* scene, const DirectX::XMMATRIX& parentAccumulatedModelLocal);
 		void SetModelData(ModelData* pModelData) { m_pModelData = pModelData; }
-
-		const DirectX::XMMATRIX& GetAccumulatedTransform() const { return m_AccumulatedTransform; }
 
 	private:
 		DirectX::XMMATRIX ConvertToXMMATRIX(const aiMatrix4x4& matrix) const;
 
 	private:
 		std::vector<std::unique_ptr<Node>> m_Children;
-		std::vector<UINT> m_MeshArrayIndices;
-		DirectX::XMMATRIX m_AccumulatedTransform;
+		std::vector<Mesh*> m_Meshes;
+		DirectX::XMMATRIX m_AccumulatedModelLocal;
 
 		Node* m_ParentNode;
 		ModelData* m_pModelData;

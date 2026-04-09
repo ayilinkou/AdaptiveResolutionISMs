@@ -1,12 +1,13 @@
 #pragma once
 
+#include <memory>
+
 #include "d3d11.h"
 #include "DirectXMath.h"
-
 #include "wrl.h"
 
-#include "Core/Window.h"
-
+#include "Core/Window/Window.h"
+#include "Core/Shader/ShaderProgram.h"
 
 namespace Core {
 
@@ -57,9 +58,14 @@ namespace Core {
 
 		void Init();
 		void Shutdown();
+		void CreateModelInputLayoutAndShaderProgram();
+		void ReleaseModelShaderProgram();
 
 		void BeginScene(float red, float green, float blue, float alpha);
 		void EndScene();
+
+		void BindForModelDraws();
+		void SetBackFaceCulling(bool bEnabled);
 
 		// this shows VRAM usage for the adapter across all processes, not just this application
 		VramInfo QueryVramUsage() const;
@@ -110,6 +116,10 @@ namespace Core {
 		static Renderer* s_pInstance;
 
 		GlobalCBuffer m_GlobalCBufferData;
+
+		ComPtr<ID3D11InputLayout> m_ModelInputLayout;
+
+		std::unique_ptr<ShaderProgram> m_ModelShaderProgram;
 
 		friend class Application;
 	};

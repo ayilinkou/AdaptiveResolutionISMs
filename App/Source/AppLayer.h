@@ -5,12 +5,11 @@
 #include "d3d11.h"
 #include "DirectXMath.h"
 
-#include "Core/Layer.h"
-#include "Core/InputEvents.h"
+#include "Core/Layer/Layer.h"
+#include "Core/Event/InputEvents.h"
 #include "Core/Shader/ShaderProgram.h"
-
-#include "Core/Renderer/Model.h" // temp
-#include "Core/Renderer/Texture.h" // temp
+#include "Core/Renderer/RenderQueue.h"
+#include "Core/Model/Model.h"
 
 using namespace Microsoft::WRL;
 
@@ -35,12 +34,10 @@ private:
 	void ApplyCameraMovement();
 
 private:
-	ComPtr<ID3D11InputLayout> m_TestInputLayout;
+	std::unique_ptr<Core::Model> m_EmeraldSquare;
+	std::unique_ptr<Core::Model> m_Bistro;
 
-	std::unique_ptr<Core::ShaderProgram> m_TestShaderProgram;
-
-	std::unique_ptr<Core::Model> m_Sword;
-
+	std::unique_ptr<Core::RenderQueue> m_RenderQueue;
 
 	UINT m_IndexCount;
 };

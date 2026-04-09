@@ -1,6 +1,6 @@
 #include "Window.h"
-#include "InputHandler.h"
-#include "Application.h"
+#include "Core/Input/InputHandler.h"
+#include "Core/Application/Application.h"
 
 namespace Core {
 	Window::Window(const WindowSpec& spec)

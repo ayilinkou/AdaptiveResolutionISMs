@@ -5,11 +5,11 @@
 #include <vector>
 #include <chrono>
 
-#include "Window.h"
-#include "Layer.h"
-#include "Renderer/Renderer.h"
-#include "ResourceManager.h"
-#include "Camera.h"
+#include "Core/Window/Window.h"
+#include "Core/Layer/Layer.h"
+#include "Core/Renderer/Renderer.h"
+#include "Core/Resource/ResourceManager.h"
+#include "Core/Camera/Camera.h"
 
 namespace Core {
 	struct ApplicationSpec

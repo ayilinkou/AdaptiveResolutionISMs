@@ -2,8 +2,8 @@
 
 #include "Texture.h"
 #include "TextureData.h"
-#include "Core/ResourceManager.h"
-#include "Core/Logger.h"
+#include "Core/Resource/ResourceManager.h"
+#include "Core/Utility/Logger.h"
 
 namespace Core {
 	Texture::Texture(const std::string& filepath)

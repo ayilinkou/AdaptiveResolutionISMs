@@ -9,13 +9,12 @@
 #include "d3dcompiler.h"
 
 #include "Resource.h"
-#include "Shader/ShaderResource.h"
-#include "Shader/ShaderCreateInfo.h"
-#include "Shader/ShaderProgramData.h"
-#include "Renderer/Renderer.h"
-#include "MyMacros.h"
-#include "Logger.h"
-#include "Utility.h"
+#include "Core/Shader/ShaderResource.h"
+#include "Core/Shader/ShaderCreateInfo.h"
+#include "Core/Shader/ShaderProgramData.h"
+#include "Core/Utility/MyMacros.h"
+#include "Core/Utility/Logger.h"
+#include "Core/Utility/Utility.h"
 
 namespace Core {
 	using namespace Microsoft::WRL;
@@ -27,8 +26,8 @@ namespace Core {
 	class ResourceManager
 	{
 	public:
-		ResourceManager(HWND hwnd, ComPtr<ID3D11Device> device)
-			: m_hWnd(hwnd), m_Device(device) { s_Instance = this; }
+		ResourceManager(HWND hwnd, ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceContext> context)
+			: m_hWnd(hwnd), m_Device(device), m_Context(context) { s_Instance = this; }
 		~ResourceManager();
 
 		static ResourceManager* Get() { return s_Instance; }
@@ -75,6 +74,7 @@ namespace Core {
 
 		const HWND m_hWnd;
 		ComPtr<ID3D11Device> m_Device;
+		ComPtr<ID3D11DeviceContext> m_Context;
 	};
 
 	template<typename T>
@@ -173,7 +173,7 @@ namespace Core {
 
 		T* shaderPtr;
 		std::string path(filepath);
-		ASSERT_NOT_FAILED(ShaderCreateInfo<T>::Create(Renderer::Get()->GetDevice().Get(), bytecode.Get(), &shaderPtr));
+		ASSERT_NOT_FAILED(ShaderCreateInfo<T>::Create(m_Device.Get(), bytecode.Get(), &shaderPtr));
 		NAME_D3D_RESOURCE(shaderPtr, (path + " " + entry + ShaderCreateInfo<T>::Suffix).c_str());
 
 		return shaderPtr;

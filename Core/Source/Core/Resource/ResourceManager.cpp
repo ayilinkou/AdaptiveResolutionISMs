@@ -1,8 +1,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "ResourceManager.h"
-#include "Renderer/TextureData.h"
-#include "Renderer/ModelData.h"
+#include "Core/Renderer/TextureData.h"
+#include "Core/Model/ModelData.h"
 #include "Loaders.h"
 
 namespace Core {
@@ -36,7 +36,7 @@ namespace Core {
 		}
 
 		std::cout << "Loading new texture..." << std::endl;
-		TextureData* pData = Loaders::TextureLoader::Load(filepath.c_str(), m_Device.Get());
+		TextureData* pData = Loaders::TextureLoader::Load(filepath.c_str(), m_Device.Get(), m_Context.Get());
 		if (!pData)
 		{
 			return nullptr;

@@ -1,5 +1,5 @@
 #include "ShaderProgram.h"
-#include "Core/ResourceManager.h"
+#include "Core/Resource/ResourceManager.h"
 
 namespace Core {
 	ShaderProgram::ShaderProgram(ShaderProgramDesc& desc)

@@ -3,8 +3,8 @@
 #include "dxgi1_4.h"
 
 #include "Renderer.h"
-#include "Core/MyMacros.h"
-#include "Core/Camera.h"
+#include "Core/Utility/MyMacros.h"
+#include "Core/Camera/Camera.h"
 
 namespace Core {
 	Renderer* Renderer::s_pInstance = nullptr;
@@ -189,9 +189,9 @@ namespace Core {
 
 		D3D11_SAMPLER_DESC SamplerDesc = {};
 		SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 		SamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 		SamplerDesc.MinLOD = 0;
 		SamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
@@ -279,6 +279,19 @@ namespace Core {
 		{
 			m_SwapChain->Present(0u, 0u);
 		}
+	}
+
+	void Renderer::BindForModelDraws()
+	{
+		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
+		m_Context->VSSetShader(m_ModelShaderProgram->GetVertexShader(), nullptr, 0u);
+		m_Context->PSSetShader(m_ModelShaderProgram->GetPixelShader(), nullptr, 0u);
+	}
+
+	void Renderer::SetBackFaceCulling(bool bEnabled)
+	{
+		m_Context->RSSetState(bEnabled ? m_RasterStateBackFaceCullOn.Get() : m_RasterStateBackFaceCullOff.Get());
 	}
 
 	VramInfo Renderer::QueryVramUsage() const
@@ -393,5 +406,42 @@ namespace Core {
 		ASSERT_NOT_FAILED(m_Context->Map(m_GlobalCBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mappedSubresource));
 		memcpy(mappedSubresource.pData, &m_GlobalCBufferData, sizeof(GlobalCBuffer));
 		m_Context->Unmap(m_GlobalCBuffer.Get(), 0u);
+	}
+
+	void Renderer::CreateModelInputLayoutAndShaderProgram()
+	{
+		HRESULT hResult;
+
+		ShaderProgramDesc desc;
+		desc.Vertex.Filepath = "Source/Shaders/BasicVS.hlsl";
+		desc.Pixel.Filepath = "Source/Shaders/BasicPS.hlsl";
+		m_ModelShaderProgram = std::make_unique<Core::ShaderProgram>(desc);
+
+		D3D11_INPUT_ELEMENT_DESC vertexLayoutElements[3] = {};
+		vertexLayoutElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+		vertexLayoutElements[0].SemanticName = "POSITION";
+		vertexLayoutElements[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		vertexLayoutElements[0].AlignedByteOffset = 0;
+
+		vertexLayoutElements[1].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+		vertexLayoutElements[1].SemanticName = "NORMAL";
+		vertexLayoutElements[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		vertexLayoutElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+
+		vertexLayoutElements[2].Format = DXGI_FORMAT_R32G32_FLOAT;
+		vertexLayoutElements[2].SemanticName = "TEXCOORD";
+		vertexLayoutElements[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		vertexLayoutElements[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+
+		UINT numElements = _countof(vertexLayoutElements);
+
+		ASSERT_NOT_FAILED(m_Device->CreateInputLayout(vertexLayoutElements, numElements, m_ModelShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
+			m_ModelShaderProgram->GetVertexShaderBlob()->GetBufferSize(), &m_ModelInputLayout));
+		NAME_D3D_RESOURCE(m_ModelInputLayout, "Model input layout");
+	}
+
+	void Renderer::ReleaseModelShaderProgram()
+	{
+		m_ModelShaderProgram.reset();
 	}
 }

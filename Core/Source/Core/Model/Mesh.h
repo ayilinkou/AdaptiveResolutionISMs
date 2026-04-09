@@ -20,6 +20,7 @@ namespace Core {
 		UINT GetIndexCount() const { return m_IndexCount; }
 		UINT GetIndexOffset() const { return m_IndexOffset; }
 
+		ModelData* GetModelData() const { return m_pModelData; }
 		Material* GetMaterial() const { return m_Material; }
 
 	private:

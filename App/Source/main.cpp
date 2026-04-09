@@ -1,4 +1,4 @@
-#include "Core/Application.h"
+#include "Core/Application/Application.h"
 #include "AppLayer.h"
 
 int main()
@@ -9,7 +9,7 @@ int main()
 	appSpec.WinSpec.Width = 1280;
 	appSpec.WinSpec.Height = 720;
 	appSpec.WinSpec.bFullscreen = false;
-	appSpec.WinSpec.bUseVSync = false;
+	appSpec.WinSpec.bUseVSync = true;
 	appSpec.RenderSpec.NearPlane = 0.1f;
 	appSpec.RenderSpec.FarPlane = 1000.f;
 	appSpec.RenderSpec.WinSpec = appSpec.WinSpec;

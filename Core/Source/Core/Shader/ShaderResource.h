@@ -6,7 +6,7 @@
 
 #include "wrl.h"
 
-#include "Core/Resource.h"
+#include "Core/Resource/Resource.h"
 
 namespace Core {
 	struct ShaderResource

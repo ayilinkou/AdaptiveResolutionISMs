@@ -2,7 +2,7 @@
 
 #include <DirectXMath.h>
 
-#include "SceneComponent.h"
+#include "Core/Component/SceneComponent.h"
 
 namespace Core {
 	class Camera : public SceneComponent
