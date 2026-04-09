@@ -1,5 +1,7 @@
 #include <vector>
 
+#include "dxgi1_4.h"
+
 #include "Renderer.h"
 #include "Core/MyMacros.h"
 #include "Core/Camera.h"
@@ -277,6 +279,32 @@ namespace Core {
 		{
 			m_SwapChain->Present(0u, 0u);
 		}
+	}
+
+	VramInfo Renderer::QueryVramUsage() const
+	{
+		VramInfo info = {};
+
+		ComPtr<IDXGIDevice> dxgiDevice;
+		m_Device->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
+
+		ComPtr<IDXGIAdapter> adapter;
+		dxgiDevice->GetAdapter(&adapter);
+
+		ComPtr<IDXGIAdapter3> adapter3;
+		adapter->QueryInterface(IID_PPV_ARGS(&adapter3));
+
+		DXGI_QUERY_VIDEO_MEMORY_INFO memoryInfo = {};
+		adapter3->QueryVideoMemoryInfo(
+			0,
+			DXGI_MEMORY_SEGMENT_GROUP_LOCAL,
+			&memoryInfo
+		);
+
+		info.CurrentUsage = memoryInfo.CurrentUsage / 1024 / 1024;
+		info.Budget = memoryInfo.Budget / 1024 / 1024;
+
+		return info;
 	}
 
 	Renderer::AdapterAndOutput Renderer::GetBestAdapterAndOutput() const

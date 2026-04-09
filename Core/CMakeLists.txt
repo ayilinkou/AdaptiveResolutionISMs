@@ -21,6 +21,7 @@ set(SOURCES
 	Source/Core/Camera.h
 	Source/Core/Camera.cpp
 	Source/Core/Transform.h
+	Source/Core/SceneComponent.h
 	Source/Core/Utility.h
 
 	Source/Core/Renderer/Renderer.h

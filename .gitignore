@@ -11,7 +11,10 @@ build/
 **.nsight-gfxproj
 **.DotSettings
 **.user
-App/shader-error.txt
 
 # Renderdoc
 *.cap
+
+App/shader-error.txt
+App/Models/**
+/temp

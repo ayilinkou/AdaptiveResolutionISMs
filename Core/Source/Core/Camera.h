@@ -2,10 +2,10 @@
 
 #include <DirectXMath.h>
 
-#include "Transform.h"
+#include "SceneComponent.h"
 
 namespace Core {
-	class Camera
+	class Camera : public SceneComponent
 	{
 	public:
 		Camera() = delete;

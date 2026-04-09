@@ -65,8 +65,12 @@ namespace Core {
 
 			UpdateAppTime();
 
+			Core::VramInfo vramInfo = Core::Renderer::Get()->QueryVramUsage();
 			std::string fpsAsString = std::to_string(m_FPS);
-			SetWindowText(m_Window->GetHandle(), (m_Spec.Name + " - FPS: " + fpsAsString).c_str());
+			std::string vramUsage = std::to_string(vramInfo.CurrentUsage);
+			std::string vramBudget = std::to_string(vramInfo.Budget);
+			std::string newTitle = m_Spec.Name + " - FPS: " + fpsAsString + ", VRAM: " + vramUsage + "/" + vramBudget + "MB";
+			SetWindowText(m_Window->GetHandle(), newTitle.c_str());
 
 			m_Camera->CalcViewMatrix();
 			Renderer::Get()->UpdateGlobalConstantBuffer(m_Camera.get(), (float)m_AppTime);

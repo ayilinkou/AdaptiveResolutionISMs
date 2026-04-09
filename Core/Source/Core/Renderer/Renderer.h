@@ -40,6 +40,12 @@ namespace Core {
 		HWND hwnd;
 		WindowSpec WinSpec;
 	};
+
+	struct VramInfo
+	{
+		UINT64 Budget;
+		UINT64 CurrentUsage;
+	};
 	
 	class Renderer
 	{
@@ -54,6 +60,9 @@ namespace Core {
 
 		void BeginScene(float red, float green, float blue, float alpha);
 		void EndScene();
+
+		// this shows VRAM usage for the adapter across all processes, not just this application
+		VramInfo QueryVramUsage() const;
 
 	private:
 		struct AdapterAndOutput
@@ -81,7 +90,6 @@ namespace Core {
 		ComPtr<ID3D11SamplerState> m_SamplerLinear;
 		ComPtr<ID3D11Query> m_PipelineStatsQuery;
 		ComPtr<ID3D11Buffer> m_GlobalCBuffer;
-
 
 		D3D11_VIEWPORT m_Viewport = {};
 
