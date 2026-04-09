@@ -19,3 +19,9 @@ License: MIT License
 DirectXTex is a texture processing library with support for reading .DDS files.
 Website: https://github.com/microsoft/DirectXTex
 License: MIT License
+
+## Open Asset Import Library (assimp)
+
+assimp is a library which imports 3d models into memory.
+Website: https://github.com/assimp/assimp
+License: BSD-3-Clause License

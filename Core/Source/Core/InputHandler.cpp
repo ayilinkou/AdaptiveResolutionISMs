@@ -79,8 +79,11 @@ namespace Core {
 				if (GetForegroundWindow() == s_hwnd)
 				{
 					ProcessMouseMovement();
-					MouseMovedEvent event(s_MouseDeltaX, s_MouseDeltaY);
-					RaiseEvent(event);
+					if (s_MouseDeltaX != 0.0 && s_MouseDeltaY != 0.0)
+					{
+						MouseMovedEvent event(s_MouseDeltaX, s_MouseDeltaY);
+						RaiseEvent(event);
+					}
 				}
 				return 0;
 			}

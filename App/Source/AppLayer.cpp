@@ -2,7 +2,7 @@
 
 #include "AppLayer.h"
 #include "Core/Application.h"
-#include "Core/Renderer.h"
+#include "Core/Renderer/Renderer.h"
 #include "Core/ResourceManager.h"
 #include "Core/MyMacros.h"
 

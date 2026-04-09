@@ -12,26 +12,29 @@ set(SOURCES
 	Source/Core/InputEvents.h
 	Source/Core/InputHandler.h
 	Source/Core/InputHandler.cpp
-	Source/Core/Renderer.h
-	Source/Core/Renderer.cpp
 	Source/Core/MyMacros.h
 	Source/Core/ResourceManager.h
 	Source/Core/ResourceManager.cpp
 	Source/Core/Resource.h
-	Source/Core/Shader/ShaderResource.h
-	Source/Core/Shader/ShaderCreateInfo.h
 	Source/Core/Logger.h
 	Source/Core/Logger.cpp
 	Source/Core/Camera.h
 	Source/Core/Camera.cpp
 	Source/Core/Transform.h
 	Source/Core/Utility.h
+
+	Source/Core/Renderer/Renderer.h
+	Source/Core/Renderer/Renderer.cpp
+
+	Source/Core/Shader/ShaderResource.h
+	Source/Core/Shader/ShaderCreateInfo.h
 )
 
 add_library(Core STATIC)
 
 # Add dependencies
 find_package(directxtex CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 
 target_sources(Core PRIVATE ${SOURCES})
 
@@ -42,6 +45,7 @@ target_include_directories(Core PUBLIC "Source")
 
 target_link_libraries(Core PRIVATE
 	Microsoft::DirectXTex
+	assimp::assimp
 )
 
 target_link_libraries(Core PUBLIC
