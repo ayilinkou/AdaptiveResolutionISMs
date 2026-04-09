@@ -1,8 +1,9 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include "Vendor/stb/stb_image.h"
-#include "DirectXTex.h"
 
 #include "ResourceManager.h"
+#include "Renderer/TextureData.h"
+#include "Renderer/ModelData.h"
+#include "Loaders.h"
 
 namespace Core {
 	ResourceManager* ResourceManager::s_Instance = nullptr;
@@ -25,16 +26,17 @@ namespace Core {
 		s_Instance = nullptr;
 	}
 
-	ID3D11ShaderResourceView* ResourceManager::LoadTexture(const std::string& filepath)
+	TextureData* ResourceManager::LoadTexture(const std::string& filepath)
 	{
 		auto it = m_TexturesMap.find(filepath);
 		if (it != m_TexturesMap.end() && it->second.get())
 		{
 			it->second->AddRef();
-			return static_cast<ID3D11ShaderResourceView*>(it->second->m_pData);
+			return static_cast<TextureData*>(it->second->m_pData);
 		}
 
-		ID3D11ShaderResourceView* pData = Internal_LoadTexture(filepath.c_str());
+		std::cout << "Loading new texture..." << std::endl;
+		TextureData* pData = Loaders::TextureLoader::Load(filepath.c_str(), m_Device.Get());
 		if (!pData)
 		{
 			return nullptr;
@@ -44,141 +46,118 @@ namespace Core {
 		return pData;
 	}
 
+	ModelData* ResourceManager::LoadModel(const std::string& modelPath, const std::string& texturesRoot)
+	{
+		auto it = m_ModelsMap.find(modelPath);
+		if (it != m_ModelsMap.end() && it->second.get())
+		{
+			it->second->AddRef();
+			return static_cast<ModelData*>(it->second->m_pData);
+		}
+
+		std::string texturesRootCorrected = texturesRoot;
+		if (texturesRoot.back() != '/')
+		{
+			texturesRootCorrected.append(1, '/');
+		}
+
+		std::cout << "Loading new model..." << std::endl;
+		ModelData* pData = Loaders::ModelLoader::Load(modelPath.c_str(), texturesRootCorrected.c_str(), m_Device.Get());
+		if (!pData)
+		{
+			return nullptr;
+		}
+
+		m_ModelsMap[modelPath] = std::make_unique<Resource>(pData);
+		return pData;
+	}
+
+	ShaderProgramData ResourceManager::LoadShaderProgram(const ShaderProgramDesc& desc)
+	{
+		ID3D11VertexShader* vs = nullptr;
+		ID3D11HullShader* hs = nullptr;
+		ID3D11DomainShader* ds = nullptr;
+		ID3D11GeometryShader* gs = nullptr;
+		ID3D11PixelShader* ps = nullptr;
+		ID3D10Blob* vsBlob = nullptr;
+
+		if (!desc.Vertex.Filepath.empty())
+			vs = LoadShader<ID3D11VertexShader>(desc.Vertex.Filepath, desc.Vertex.Entry, vsBlob);
+		if (!desc.Hull.Filepath.empty())
+			hs = LoadShader<ID3D11HullShader>(desc.Hull.Filepath, desc.Hull.Entry);
+		if (!desc.Domain.Filepath.empty())
+			ds = LoadShader<ID3D11DomainShader>(desc.Domain.Filepath, desc.Domain.Entry);
+		if (!desc.Geometry.Filepath.empty())
+			gs = LoadShader<ID3D11GeometryShader>(desc.Geometry.Filepath, desc.Geometry.Entry);
+		if (!desc.Pixel.Filepath.empty())
+			ps = LoadShader<ID3D11PixelShader>(desc.Pixel.Filepath, desc.Pixel.Entry);
+
+		return ShaderProgramData(vs, hs, ds, gs, ps, vsBlob, desc); // as far as I know, this will not make a copy on C++17 and newer
+	}
+
 	UINT ResourceManager::UnloadTexture(const std::string& filepath)
 	{
 		Resource* resourceToUnload = m_TexturesMap[filepath].get();
 		if (!resourceToUnload)
 		{
 			m_TexturesMap.erase(filepath);
-			return 0;
+			return 0u;
 		}
 
 		resourceToUnload->RemoveRef();
-		if (resourceToUnload->m_RefCount > 0)
+		if (resourceToUnload->m_RefCount > 0u)
 		{
 			return resourceToUnload->m_RefCount;
 		}
 
 		Internal_UnloadTexture(filepath);
-		return 0;
+		return 0u;
 	}
 
-	ID3D11ShaderResourceView* ResourceManager::Internal_LoadTexture(const char* filepath)
+	UINT ResourceManager::UnloadModel(const std::string& filepath)
 	{
-		HRESULT hResult;
-		ComPtr<ID3D11Texture2D> texture;
-		bool bNeedsAlpha;
-		unsigned char* imageData = nullptr;
-		unsigned char* imageDataRgba = nullptr;
-
-		// if .dds file, use DirectXTex, else use stb_image
-		bool bUseDirectXTex = StaticUtils::GetFileExtension(filepath) == "dds";
-		if (bUseDirectXTex)
+		Resource* ResourceToUnload = m_ModelsMap[filepath].get();
+		if (!ResourceToUnload)
 		{
-			std::wstring wideStr;
-			StaticUtils::ToWideString(filepath, wideStr);
-			const wchar_t* widePath = wideStr.c_str();
-			DirectX::TexMetadata metadata;
-			DirectX::ScratchImage image;
-			ASSERT_NOT_FAILED(DirectX::LoadFromDDSFile(widePath, DirectX::DDS_FLAGS_NONE, &metadata, image));
-
-			// TODO: this will make all mipmaps, but I'm probably not going to use them anytime soon
-			ComPtr<ID3D11Resource> resource;
-			DirectX::CreateTextureEx(
-				m_Device.Get(),
-				image.GetImages(),
-				image.GetImageCount(),
-				metadata,
-				D3D11_USAGE_IMMUTABLE,
-				D3D11_BIND_SHADER_RESOURCE,
-				0u,
-				0u,
-				DirectX::CREATETEX_DEFAULT,
-				&resource
-			);
-
-			ASSERT_NOT_FAILED(resource.As(&texture));
-		}
-		else
-		{
-			int width, height, channels;
-			std::string fileString(filepath);
-			imageData = stbi_load(filepath, &width, &height, &channels, 0);
-			assert(imageData);
-
-			imageDataRgba = imageData;
-			bNeedsAlpha = channels == 3; // there's no R8G8B8 format so have to use a format with an alpha
-
-			D3D11_TEXTURE2D_DESC texDesc = {};
-			texDesc.Width = width;
-			texDesc.Height = height;
-			texDesc.MipLevels = 1;
-			texDesc.ArraySize = 1;
-			texDesc.SampleDesc.Count = 1;
-			texDesc.Usage = D3D11_USAGE_IMMUTABLE;
-			texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-			switch (channels)
-			{
-			case 1:
-			{
-				texDesc.Format = DXGI_FORMAT_R8_UNORM;
-				break;
-			}
-			case 2:
-			{
-				texDesc.Format = DXGI_FORMAT_R8G8_UNORM;
-				break;
-			}
-			case 3:
-			{
-				imageDataRgba = new unsigned char[width * height * 4];
-
-				for (int i = 0; i < width * height; i++)
-				{
-					imageDataRgba[i * 4 + 0] = imageData[i * 3 + 0];
-					imageDataRgba[i * 4 + 1] = imageData[i * 3 + 1];
-					imageDataRgba[i * 4 + 2] = imageData[i * 3 + 2];
-					imageDataRgba[i * 4 + 3] = 255;
-				}
-
-				channels = 4;
-				texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-				break;
-			}
-			default:
-			{
-				texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-				break;
-			}
-			}
-
-			D3D11_SUBRESOURCE_DATA initData = {};
-			initData.pSysMem = imageDataRgba;
-			initData.SysMemPitch = width * channels;
-
-			ASSERT_NOT_FAILED(m_Device->CreateTexture2D(&texDesc, &initData, &texture));
-
-			if (bNeedsAlpha)
-			{
-				delete[] imageDataRgba;
-			}
-			stbi_image_free(imageData);
+			m_ModelsMap.erase(filepath);
+			return 0u;
 		}
 
-		ID3D11ShaderResourceView* textureView = nullptr;
-		ASSERT_NOT_FAILED(m_Device->CreateShaderResourceView(texture.Get(), nullptr, &textureView));
+		ResourceToUnload->RemoveRef();
+		if (ResourceToUnload->m_RefCount > 0u)
+		{
+			return ResourceToUnload->m_RefCount;
+		}
 
-		NAME_D3D_RESOURCE(texture, (std::string(filepath) + " texture").c_str());
-		NAME_D3D_RESOURCE(textureView, (std::string(filepath) + " texture SRV").c_str());
-
-		return textureView;
+		Internal_UnloadModel(filepath);
+		return 0u;
 	}
 
-	void ResourceManager::Internal_UnloadTexture(const std::string& filepath)
+	void ResourceManager::UnloadShaderProgram(const ShaderProgramDesc& desc)
 	{
-		ID3D11ShaderResourceView* SRV = static_cast<ID3D11ShaderResourceView*>(m_TexturesMap[filepath]->m_pData);
-		SRV->Release();
+		if (!desc.Vertex.Filepath.empty())
+			UnloadShader<ID3D11VertexShader>(desc.Vertex.Filepath, desc.Vertex.Entry);
+		if (!desc.Hull.Filepath.empty())
+			UnloadShader<ID3D11HullShader>(desc.Hull.Filepath, desc.Hull.Entry);
+		if (!desc.Domain.Filepath.empty())
+			UnloadShader<ID3D11DomainShader>(desc.Domain.Filepath, desc.Domain.Entry);
+		if (!desc.Geometry.Filepath.empty())
+			UnloadShader<ID3D11GeometryShader>(desc.Geometry.Filepath, desc.Geometry.Entry);
+		if (!desc.Pixel.Filepath.empty())
+			UnloadShader<ID3D11PixelShader>(desc.Pixel.Filepath, desc.Pixel.Entry);
+	}
+
+	void ResourceManager::Internal_UnloadTexture(const std::string filepath)
+	{
+		TextureData* pTextureData = static_cast<TextureData*>(m_TexturesMap[filepath]->m_pData);
+		delete pTextureData;
 		m_TexturesMap.erase(filepath);
+	}
+
+	void ResourceManager::Internal_UnloadModel(const std::string filepath)
+	{
+		ModelData* pModelData = static_cast<ModelData*>(m_ModelsMap[filepath]->m_pData);
+		delete pModelData;
+		m_ModelsMap.erase(filepath);
 	}
 }

@@ -11,6 +11,7 @@
 #include "Resource.h"
 #include "Shader/ShaderResource.h"
 #include "Shader/ShaderCreateInfo.h"
+#include "Shader/ShaderProgramData.h"
 #include "Renderer/Renderer.h"
 #include "MyMacros.h"
 #include "Logger.h"
@@ -19,6 +20,10 @@
 namespace Core {
 	using namespace Microsoft::WRL;
 	
+	class TextureData;
+	class ModelData;
+	struct ShaderProgramDesc;
+
 	class ResourceManager
 	{
 	public:
@@ -34,31 +39,38 @@ namespace Core {
 	public:
 		void Shutdown();
 
-		// these must NOT be stored with a ComPtr and should be unloaded using UnloadTexture when no longer needed
-		ID3D11ShaderResourceView* LoadTexture(const std::string& filepath);
-		template <typename T>
-		T* LoadShader(const std::string& filepath, const std::string& entry = "main");
-		template <typename T>
-		T* LoadShader(const std::string& filepath, const std::string& entry, ComPtr<ID3D10Blob>& bytecode);
+		TextureData* LoadTexture(const std::string& filepath);
+		ModelData* LoadModel(const std::string& modelPath, const std::string& texturesPath);
+		ShaderProgramData LoadShaderProgram(const ShaderProgramDesc& desc);
 
 		UINT UnloadTexture(const std::string& filepath);
-		template <typename T>
-		UINT UnloadShader(const std::string& filepath, const std::string& entry = "main");
+		UINT UnloadModel(const std::string& filepath);
+		void UnloadShaderProgram(const ShaderProgramDesc& desc);
 
 		std::unordered_map<std::string, std::unique_ptr<Resource>>& GetTexturesMap() { return m_TexturesMap; }
+		std::unordered_map<std::string, std::unique_ptr<Resource>>& GetModelsMap() { return m_ModelsMap; }
 		std::unordered_map<std::string, std::unordered_map<std::string, std::unique_ptr<ShaderResource>>>& GetShadersMap() { return m_ShadersMap; }
 
 	private:
-		ID3D11ShaderResourceView* Internal_LoadTexture(const char* filepath);
+		template <typename T>
+		T* LoadShader(const std::string& filepath, const std::string& entry);
+		template <typename T>
+		T* LoadShader(const std::string& filepath, const std::string& entry, ID3D10Blob*& bytecode);
+
 		template <typename T>
 		T* Internal_LoadShader(const char* filepath, const char* entry, ComPtr<ID3D10Blob>& bytecode);
 
-		void Internal_UnloadTexture(const std::string& filepath);
+		void Internal_UnloadTexture(const std::string filepath);
+		void Internal_UnloadModel(const std::string filepath);
+
+		template <typename T>
+		UINT UnloadShader(const std::string& filepath, const std::string& entry);
 		template <typename T>
 		void Internal_UnloadShader(const std::string& filepath, const std::string& entry);
 
 	private:
 		std::unordered_map<std::string, std::unique_ptr<Resource>> m_TexturesMap;
+		std::unordered_map<std::string, std::unique_ptr<Resource>> m_ModelsMap;
 		std::unordered_map<std::string, std::unordered_map<std::string, std::unique_ptr<ShaderResource>>> m_ShadersMap;
 
 		const HWND m_hWnd;
@@ -79,6 +91,7 @@ namespace Core {
 			}
 		}
 
+		std::cout << "Loading new shader..." << std::endl;
 		m_ShadersMap[filepath][entry] = std::make_unique<ShaderResource>();
 		T* pData = Internal_LoadShader<T>(filepath.c_str(), entry.c_str(), m_ShadersMap[filepath][entry]->Bytecode);
 		if (!pData)
@@ -92,11 +105,11 @@ namespace Core {
 	}
 
 	template<typename T>
-	inline T* ResourceManager::LoadShader(const std::string& filepath, const std::string& entry, ComPtr<ID3D10Blob>& bytecode)
+	inline T* ResourceManager::LoadShader(const std::string& filepath, const std::string& entry, ID3D10Blob*& bytecode)
 	{
 		T* ptr = LoadShader<T>(filepath, entry);
 		assert(ptr);
-		bytecode = m_ShadersMap[filepath][entry]->Bytecode;
+		bytecode = m_ShadersMap[filepath][entry]->Bytecode.Get();
 		return ptr;
 	}
 
@@ -147,13 +160,14 @@ namespace Core {
 		{
 			if (errorMessage.Get())
 			{
-				Logger::OutputShaderErrorMessage(errorMessage.Get(), m_hWnd, filepath);
+				Logger::OutputShaderErrorMessage(errorMessage.Get(), filepath);
 			}
 			else
 			{
-				MessageBox(m_hWnd, filepath, "Missing shader file!", MB_OK);
+				std::string message = std::format("Missing shader file {}", filepath);
+				Logger::ShowMessageBox(message.c_str(), "Missing shader file!", MB_OK | MB_ICONERROR);
 			}
-
+			std::abort();
 			return nullptr;
 		}
 

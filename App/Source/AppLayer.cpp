@@ -5,6 +5,11 @@
 #include "Core/Renderer/Renderer.h"
 #include "Core/ResourceManager.h"
 #include "Core/MyMacros.h"
+#include "Core/Shader/ShaderProgram.h"
+
+#include "Core/Renderer/Model.h"
+#include "Core/Renderer/ModelData.h"
+#include "Core/Renderer/Texture.h"
 
 AppLayer::AppLayer(const std::string& layerName)
 	: Core::Layer(layerName)
@@ -23,60 +28,38 @@ void AppLayer::Init()
 	ID3D11DeviceContext* context = Core::Renderer::Get()->GetContext().Get();
 	ID3D11Device* device = Core::Renderer::Get()->GetDevice().Get();
 
-	UINT indices[] = {
-		0, 1, 2
-	};
+	Core::ShaderProgramDesc desc;
+	desc.Vertex.Filepath = "Source/Shaders/BasicVS.hlsl";
+	desc.Pixel.Filepath = "Source/Shaders/BasicPS.hlsl";
+	m_TestShaderProgram = std::make_unique<Core::ShaderProgram>(desc);
 
-	m_IndexCount = _countof(indices);
+	D3D11_INPUT_ELEMENT_DESC vertexLayoutElements[3] = {};
+	vertexLayoutElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	vertexLayoutElements[0].SemanticName = "POSITION";
+	vertexLayoutElements[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	vertexLayoutElements[0].AlignedByteOffset = 0;
 
-	float vertices[] = {
-		 0.0f,  0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f
-	};
+	vertexLayoutElements[1].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	vertexLayoutElements[1].SemanticName = "NORMAL";
+	vertexLayoutElements[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	vertexLayoutElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 
-	D3D11_BUFFER_DESC indexBufferDesc = {};
-	indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	indexBufferDesc.ByteWidth = sizeof(indices);
-	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	vertexLayoutElements[2].Format = DXGI_FORMAT_R32G32_FLOAT;
+	vertexLayoutElements[2].SemanticName = "TEXCOORD";
+	vertexLayoutElements[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	vertexLayoutElements[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 
-	D3D11_SUBRESOURCE_DATA data = {};
-	data.pSysMem = &indices;
+	UINT numElements = _countof(vertexLayoutElements);
 
-	ASSERT_NOT_FAILED(device->CreateBuffer(&indexBufferDesc, &data, &m_IndexBuffer));
-	NAME_D3D_RESOURCE(m_IndexBuffer, "Test index buffer");
+	ASSERT_NOT_FAILED(device->CreateInputLayout(vertexLayoutElements, numElements, m_TestShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
+		m_TestShaderProgram->GetVertexShaderBlob()->GetBufferSize(), &m_TestInputLayout));
+	NAME_D3D_RESOURCE(m_TestInputLayout, "Test input layout");
 
-	D3D11_BUFFER_DESC vertexBufferDesc = {};
-	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	vertexBufferDesc.ByteWidth = sizeof(vertices);
-	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-
-	data.pSysMem = &vertices;
-
-	ASSERT_NOT_FAILED(device->CreateBuffer(&vertexBufferDesc, &data, &m_VertexBuffer));
-	NAME_D3D_RESOURCE(m_VertexBuffer, "Test vertex buffer");
-
-	ComPtr<ID3D10Blob> vsBuffer;
-	m_vShaderPath = "Source/Shaders/tri.hlsl";
-	m_pShaderPath = "Source/Shaders/basic.hlsl";
-	m_VertexShader = Core::ResourceManager::Get()->LoadShader<ID3D11VertexShader>(m_vShaderPath, "main", vsBuffer);
-	m_PixelShader = Core::ResourceManager::Get()->LoadShader<ID3D11PixelShader>(m_pShaderPath);
-
-	D3D11_INPUT_ELEMENT_DESC vertexLayout[1] = {};
-	vertexLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	vertexLayout[0].SemanticName = "POSITION";
-	vertexLayout[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-
-	UINT numElements = _countof(vertexLayout);
-
-	ASSERT_NOT_FAILED(device->CreateInputLayout(vertexLayout, numElements, vsBuffer->GetBufferPointer(), vsBuffer->GetBufferSize(), &m_InputLayout));
-	NAME_D3D_RESOURCE(m_InputLayout, "Test input layout");
+	m_Sword = std::make_unique<Core::Model>("Models/fantasy_sword_stylized/scene.gltf", "Models/fantasy_sword_stylized");
 }
 
 void AppLayer::Shutdown()
 {
-	Core::ResourceManager::Get()->UnloadShader<ID3D11VertexShader>(m_vShaderPath);
-	Core::ResourceManager::Get()->UnloadShader<ID3D11PixelShader>(m_pShaderPath);
 }
 
 void AppLayer::OnEvent(Core::Event& event)
@@ -96,21 +79,13 @@ void AppLayer::OnRender(double dt)
 	Core::Renderer* renderer = Core::Renderer::Get();
 	ID3D11DeviceContext* context = renderer->GetContext().Get();
 
-	UINT strides[] = { sizeof(float) * 3u };
-	UINT offsets[] = { 0u };
-
-	context->IASetIndexBuffer(m_IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0u);
-	context->IASetVertexBuffers(0u, 1u, m_VertexBuffer.GetAddressOf(), strides, offsets);
-	context->IASetInputLayout(m_InputLayout.Get());
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	context->VSSetShader(m_VertexShader, nullptr, 0u);
-
-	context->PSSetShader(m_PixelShader, nullptr, 0u);
-
 	context->OMSetRenderTargets(1u, renderer->GetBackBufferRTV().GetAddressOf(), renderer->GetDSV().Get());
 
-	context->DrawIndexed(m_IndexCount, 0u, 0);
+	context->IASetInputLayout(m_TestInputLayout.Get());
+	context->VSSetShader(m_TestShaderProgram->GetVertexShader(), nullptr, 0u);
+	context->PSSetShader(m_TestShaderProgram->GetPixelShader(), nullptr, 0u);
+	m_Sword->GetModelData()->TestDraw();
 }
 
 bool AppLayer::OnKeyPressed(Core::KeyPressedEvent& e)

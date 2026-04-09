@@ -39,7 +39,7 @@ namespace Core {
 		const float m_NearZ;
 		const float m_FarZ;
 
-		float m_CameraSpeed = 1.f;
+		float m_CameraSpeed = 10.f;
 		float m_MouseSens = 0.1f;
 	};
 }

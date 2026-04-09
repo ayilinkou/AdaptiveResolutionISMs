@@ -2,6 +2,7 @@
 
 #include "Application.h"
 #include "InputHandler.h"
+#include "Logger.h"
 
 namespace Core {
 	Application* Application::s_pApp = nullptr;
@@ -20,6 +21,8 @@ namespace Core {
 
 		m_Window = std::make_shared<Window>(m_Spec.WinSpec);
 		m_Window->Create();
+
+		Logger::Init(m_Window->GetHandle());
 
 		std::function<void(Event&)> callback = [this](Event& e) { RaiseEvent(e); };
 		InputHandler::Init(callback, m_Window->GetHandle());
@@ -95,7 +98,7 @@ namespace Core {
 	void Application::RaiseEvent(Event& e)
 	{
 #if _DEBUG
-		std::println("{}", e.ToString());
+		//std::println("{}", e.ToString());
 #endif
 		for (auto& layer : std::views::reverse(m_Layers))
 		{

@@ -19,5 +19,5 @@ struct GlobalCBufferData
 
 cbuffer GlobalCBuffer : register(b0)
 {
-	GlobalCBufferData GlobalCBuffer;
+	GlobalCBufferData globalCBuffer;
 };

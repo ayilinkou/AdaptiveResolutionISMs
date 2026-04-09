@@ -7,6 +7,10 @@
 
 #include "Core/Layer.h"
 #include "Core/InputEvents.h"
+#include "Core/Shader/ShaderProgram.h"
+
+#include "Core/Renderer/Model.h" // temp
+#include "Core/Renderer/Texture.h" // temp
 
 using namespace Microsoft::WRL;
 
@@ -31,14 +35,12 @@ private:
 	void ApplyCameraMovement();
 
 private:
-	ComPtr<ID3D11Buffer> m_IndexBuffer;
-	ComPtr<ID3D11Buffer> m_VertexBuffer;
-	ComPtr<ID3D11InputLayout> m_InputLayout;
+	ComPtr<ID3D11InputLayout> m_TestInputLayout;
 
-	std::string m_vShaderPath;
-	std::string m_pShaderPath;
-	ID3D11VertexShader* m_VertexShader;
-	ID3D11PixelShader* m_PixelShader;
+	std::unique_ptr<Core::ShaderProgram> m_TestShaderProgram;
+
+	std::unique_ptr<Core::Model> m_Sword;
+
 
 	UINT m_IndexCount;
 };
