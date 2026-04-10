@@ -75,6 +75,24 @@ void UILayer::LoadEmeraldSquareNight()
 		spotLightSix->SetAngles(0.f, 40.f);
 		pAppLayer->AddLight(std::move(spotLightSix));
 
+		auto busOneHeadlightLeft = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+		busOneHeadlightLeft->SetName("Bus 1 left headlight");
+		busOneHeadlightLeft->SetPosition(-50.4f, 1.f, 4.4f);
+		busOneHeadlightLeft->SetIntensity(10.f);
+		busOneHeadlightLeft->SetDirection(-0.98f, -0.2f, 0.f);
+		busOneHeadlightLeft->SetAngles(0.f, 50.f);
+		busOneHeadlightLeft->SetAttenuation(0.f, 0.3f, 5.5f);
+		pAppLayer->AddLight(std::move(busOneHeadlightLeft));
+
+		auto busOneHeadlightRight = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+		busOneHeadlightRight->SetName("Bus 1 right headlight");
+		busOneHeadlightRight->SetPosition(-50.4f, 1.f, 6.1f);
+		busOneHeadlightRight->SetIntensity(10.f);
+		busOneHeadlightRight->SetDirection(-0.98f, -0.2f, 0.f);
+		busOneHeadlightRight->SetAngles(0.f, 50.f);
+		busOneHeadlightRight->SetAttenuation(0.f, 0.3f, 5.5f);
+		pAppLayer->AddLight(std::move(busOneHeadlightRight));
+
 		color = { 1.f, 1.f, 1.f };
 		dir = { 0.2f, -0.6f, 0.4f };
 		auto dirLight = std::make_unique<Core::DirectionalLight>(color, dir);

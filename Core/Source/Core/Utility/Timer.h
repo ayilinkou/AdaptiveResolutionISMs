@@ -8,7 +8,7 @@ class Timer
 public:
 	Timer(const std::string& name)
 	{
-#ifdef DEBUG
+#ifdef _DEBUG
 		start = std::chrono::high_resolution_clock::now();
 		this->name = name;
 #endif
@@ -21,7 +21,7 @@ public:
 
 	void EndTimer()
 	{
-#ifdef DEBUG
+#ifdef _DEBUG
 		if (!bFinished)
 		{
 			bFinished = true;
@@ -31,6 +31,11 @@ public:
 			printf("%s took %.1f milliseconds.\n", name.c_str(), duration.count() * 1000.f);
 		}
 #endif
+	}
+
+	void InvalidateTimer()
+	{
+		bFinished = true;
 	}
 
 private:

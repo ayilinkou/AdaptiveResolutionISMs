@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <unordered_set>
 #include <unordered_map>
+#include <array>
 
 #include "d3d11.h"
 #include "wrl.h"
@@ -20,8 +20,6 @@ namespace Core {
 	namespace Loaders {
 		class ModelLoader;
 	}
-
-	using namespace Microsoft::WRL;
 		
 	class ModelData
 	{
@@ -45,17 +43,28 @@ namespace Core {
 
 		const std::vector<Mesh>& GetMeshes() const { return m_Meshes; }
 		const std::vector<DirectX::XMMATRIX>& GetMeshLocalTransformsT(Mesh* pMesh) const { return m_MeshLocalTransformsT.at(pMesh); }
+		UINT GetPointCloudCount() const { return m_PointCloudCount; }
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetPointCloudSRV() const { return m_PointCloudSRV; }
 
 	private:
 		Mesh* RegisterMesh(aiMesh* mesh, UINT meshIndex, const DirectX::XMMATRIX& localTransform);
 		void RegisterLight(aiLight* pLight, const DirectX::XMMATRIX& accumTransform);
 		void CreateBuffers();
 
+		void ProcessPointCloudVertices();
+		void AddPointCloudFace(const std::array<DirectX::XMFLOAT3, 3>& face, const std::vector<DirectX::XMMATRIX>& localTransforms);
+		std::vector<DirectX::XMFLOAT3> FaceToPointCloud(const std::array<DirectX::XMFLOAT3, 3>& face, float density);
+
 		void ReleaseIndexAndVertexArrays();
 
 	private:
-		ComPtr<ID3D11Buffer> m_IndexBuffer;
-		ComPtr<ID3D11Buffer> m_VertexBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_IndexBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_VertexBuffer;
+
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_PointCloudBuffer;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_PointCloudSRV;
+		UINT m_PointCloudCount;
+		float m_PointCloudDensity;
 
 		std::vector<Material> m_Materials;
 		std::vector<Mesh> m_Meshes;
@@ -67,7 +76,8 @@ namespace Core {
 		const std::string m_ModelPath;
 		const std::string m_TexturesRoot;
 
-		std::vector<UINT>* m_Indices = nullptr;
-		std::vector<Vertex>* m_Vertices = nullptr;
+		std::unique_ptr<std::vector<UINT>> m_Indices;
+		std::unique_ptr<std::vector<Vertex>> m_Vertices;
+		std::unique_ptr<std::vector<DirectX::XMFLOAT3>> m_PointCloudPoints;
 	};
 }

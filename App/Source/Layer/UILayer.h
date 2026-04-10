@@ -7,7 +7,7 @@ class UILayer : public Core::Layer
 {
 public:
 	UILayer(const std::string& layerName)
-		: Layer(layerName) {}
+		: Layer(layerName) { ToggleVisibility(); }
 
 	virtual void OnEvent(Core::Event& e) override;
 

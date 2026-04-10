@@ -38,10 +38,17 @@ namespace Core {
 		virtual void SetIntensity(float intensity) { m_Data.Intensity = intensity; }
 
 		const SpotLightData& GetData() const { return m_Data; }
+		const DirectX::XMMATRIX GetViewT() const { return DirectX::XMMatrixTranspose(m_View); }
+		const DirectX::XMMATRIX GetProjT() const { return DirectX::XMMatrixTranspose(m_Proj); }
 		const DirectX::XMMATRIX& GetViewProjT() const { return m_Data.ViewProj; }
 		static const D3D11_VIEWPORT& GetShadowMapViewport() { return s_ShadowMapViewport; }
-		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>>& GetDSVs() { return s_DSVs; }
+		static const D3D11_VIEWPORT& GetISMViewport() { return s_ISMViewport; }
+		static constexpr UINT GetShadowMapRes() { return s_SHADOW_MAP_RES; }
+		static constexpr UINT GetISM_Res() { return s_ISM_RES; }
+		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>>& GetShadowMapDSVs() { return s_ShadowMapDSVs; }
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetShadowMapsSRV() { return s_ShadowMapsSRV; }
+		static std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>& GetISM_UAVs() { return s_ISM_UAVs; }
+		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetISM_SRV() { return s_ISM_SRV; }
 
 	private:
 		static void InitStatics();
@@ -61,9 +68,15 @@ namespace Core {
 		float m_ConeInnerAngle = 60.f;
 		float m_ConeOuterAngle = 89.f;
 
-		static D3D11_VIEWPORT s_ShadowMapViewport;
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_ShadowMapsSRV;
-		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> s_DSVs;
+		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> s_ShadowMapDSVs;
+		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_ISM_SRV;
+		static std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>> s_ISM_UAVs;
+
+		static constexpr UINT s_SHADOW_MAP_RES = 512u;
+		static constexpr UINT s_ISM_RES = 256u;
+		static constexpr D3D11_VIEWPORT s_ShadowMapViewport = { 0.f, 0.f, (float)s_SHADOW_MAP_RES, (float)s_SHADOW_MAP_RES, 0.f, 1.f };
+		static constexpr D3D11_VIEWPORT s_ISMViewport = { 0.f, 0.f, (float)s_ISM_RES, (float)s_ISM_RES, 0.f, 1.f };
 
 		friend class LightManager;
 	};

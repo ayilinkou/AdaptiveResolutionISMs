@@ -7,8 +7,9 @@
 
 namespace Core {
 	constexpr UINT SHADOW_MAP_RES = 1024u;
-	D3D11_VIEWPORT DirectionalLight::s_ShadowMapViewport = { 0.f, 0.f, (float)SHADOW_MAP_RES, (float)SHADOW_MAP_RES, 0.f, 1.f };
-	DirectX::XMMATRIX DirectionalLight::s_Proj = DirectX::XMMatrixOrthographicLH(300.f, 300.f, 0.1f, 1000.f);
+	const D3D11_VIEWPORT DirectionalLight::s_ShadowMapViewport = { 0.f, 0.f, (float)SHADOW_MAP_RES, (float)SHADOW_MAP_RES, 0.f, 1.f };
+	const DirectX::XMMATRIX DirectionalLight::s_Proj = DirectX::XMMatrixOrthographicLH(300.f, 300.f, 0.1f, 1000.f);
+	const DirectX::XMMATRIX DirectionalLight::s_ProjT = DirectX::XMMatrixTranspose(DirectionalLight::s_Proj);
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> DirectionalLight::s_ShadowMapsSRV;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> DirectionalLight::s_DSVs;
 	
@@ -16,6 +17,7 @@ namespace Core {
 	{
 		m_Data.Color = color;
 		m_Name = "Directional Light";
+		m_ViewT = DirectX::XMMatrixIdentity();
 		LightManager::RegisterLight(this);
 		SetDirection(dir);
 	}
@@ -102,6 +104,7 @@ namespace Core {
 		constexpr float distance = -300.f;
 		const DirectX::XMVECTOR lightPos = DirectX::XMVectorScale(v, distance);
 		const DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(lightPos, DirectX::XMVectorZero(), DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f));
+		m_ViewT = DirectX::XMMatrixTranspose(view);
 		m_Data.ViewProj = DirectX::XMMatrixTranspose(DirectX::XMMatrixMultiply(view, s_Proj));
 	}
 }

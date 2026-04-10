@@ -24,6 +24,8 @@ public:
 
 	void AddLight(std::unique_ptr<Core::Light>&& light);
 
+	Core::ShadowType& GetShadowTypeRef() { return m_ShadowType; }
+
 private:
 	void Init();
 	void Shutdown();
@@ -36,4 +38,6 @@ private:
 	std::vector<std::unique_ptr<Core::Light>> m_Lights;
 
 	std::unique_ptr<Core::RenderQueue> m_RenderQueue;
+
+	Core::ShadowType m_ShadowType = Core::ShadowType::ShadowMap;
 };

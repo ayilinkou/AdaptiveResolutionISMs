@@ -145,6 +145,14 @@ void UILayer::RenderLightingWindow()
 
 	ImGui::SliderFloat("Ambient Strength", &Core::LightManager::GetAmbientStrengthRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	ImGui::ColorEdit3("Skybox Color", reinterpret_cast<float*>(&Core::Renderer::Get()->GetClearColor()));
+	
+	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
+	const char* shadowTypeStrings[] = { "Shadow Map", "ISM" };
+	Core::ShadowType& shadowType = pAppLayer->GetShadowTypeRef();
+	int currentShadowType = static_cast<int>(shadowType);
+	if (ImGui::Combo("Shadow Type", &currentShadowType, shadowTypeStrings, IM_ARRAYSIZE(shadowTypeStrings)))
+		shadowType = static_cast<Core::ShadowType>(currentShadowType);
+	
 	ImGui::Separator();
 
 	auto& lights = Core::LightManager::GetLights();

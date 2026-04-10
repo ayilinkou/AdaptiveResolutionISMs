@@ -208,7 +208,7 @@ namespace Core {
 		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&samplerDesc, &m_SamplerLinear));
 		NAME_D3D_RESOURCE(m_SamplerLinear, "Linear sampler state");
 
-		samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
 		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
 		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
@@ -216,9 +216,6 @@ namespace Core {
 		samplerDesc.BorderColor[1] = 1.f;
 		samplerDesc.BorderColor[2] = 1.f;
 		samplerDesc.BorderColor[3] = 1.f;
-		samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-		samplerDesc.MinLOD = 0;
-		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&samplerDesc, &m_ShadowMapSampler));
 		NAME_D3D_RESOURCE(m_ShadowMapSampler, "Shadow map sampler state");
@@ -328,8 +325,7 @@ namespace Core {
 	{
 		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
-		m_Context->VSSetShader(m_OpaqueShaderProgram->GetVertexShader(), nullptr, 0u);
-		m_Context->PSSetShader(m_OpaqueShaderProgram->GetPixelShader(), nullptr, 0u);
+		m_OpaqueShaderProgram->Bind();
 		EnableDepthWrite();
 		DisableBlending();
 	}
@@ -338,8 +334,7 @@ namespace Core {
 	{
 		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
-		m_Context->VSSetShader(m_TransparentShaderProgram->GetVertexShader(), nullptr, 0u);
-		m_Context->PSSetShader(m_TransparentShaderProgram->GetPixelShader(), nullptr, 0u);
+		m_TransparentShaderProgram->Bind();
 		DisableDepthWrite();
 		EnableBlending();
 	}
@@ -348,18 +343,16 @@ namespace Core {
 	{
 		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
-		m_Context->VSSetShader(m_DSVShadowShaderProgram->GetVertexShader(), nullptr, 0u);
-		m_Context->PSSetShader(m_DSVShadowShaderProgram->GetPixelShader(), nullptr, 0u);
+		m_DSVShadowShaderProgram->Bind();
 		EnableDepthWrite();
 		DisableBlending();
 	}
 
-	void Renderer::BindForPointShadowPass()
+	void Renderer::BindForPointLightShadowPass()
 	{
 		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
-		m_Context->VSSetShader(m_PointLightShadowShaderProgram->GetVertexShader(), nullptr, 0u);
-		m_Context->PSSetShader(m_PointLightShadowShaderProgram->GetPixelShader(), nullptr, 0u);
+		m_PointLightShadowShaderProgram->Bind();
 		EnableDepthWrite();
 		DisableBlending();
 	}
@@ -517,19 +510,22 @@ namespace Core {
 
 	void Renderer::CreateShaderPrograms()
 	{
-		ShaderProgramDesc desc;
+		ShaderProgramDesc desc = {};
 		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/BasicVS.hlsl";
 		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/BasicPS.hlsl";
 		m_OpaqueShaderProgram = std::make_unique<ShaderProgram>(desc);
 
+		desc = {};
 		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/BasicVS.hlsl";
 		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/TransparentPS.hlsl";
 		m_TransparentShaderProgram = std::make_unique<ShaderProgram>(desc);
 
+		desc = {};
 		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/ShadowVS.hlsl";
 		desc.Pixel.Filepath = "";
 		m_DSVShadowShaderProgram = std::make_unique<ShaderProgram>(desc);
 
+		desc = {};
 		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/ShadowVS.hlsl";
 		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/PointLightShadowPS.hlsl";
 		m_PointLightShadowShaderProgram = std::make_unique<ShaderProgram>(desc);

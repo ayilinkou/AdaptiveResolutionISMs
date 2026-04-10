@@ -14,6 +14,7 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 
 add_subdirectory(Core)
 add_subdirectory(App)
+add_subdirectory(PointCloudConverter)
 
 # Enable solution folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

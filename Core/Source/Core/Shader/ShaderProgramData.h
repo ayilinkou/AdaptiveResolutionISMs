@@ -12,8 +12,8 @@ namespace Core {
 	public:
 		ShaderProgramData() = delete;
 		ShaderProgramData(ID3D11VertexShader* vs, ID3D11HullShader* hs, ID3D11DomainShader* ds, ID3D11GeometryShader* gs, ID3D11PixelShader* ps,
-			ID3D10Blob* vsBlob, const ShaderProgramDesc& desc) : m_VertexShader(vs), m_HullShader(hs), m_DomainShader(ds), m_GeometryShader(gs),
-			m_PixelShader(ps), m_vsBlob(vsBlob), m_Desc(desc) { std::cout << "ShaderProgramData being created..." << std::endl; }
+			ID3D11ComputeShader* cs, ID3D10Blob* vsBlob, const ShaderProgramDesc& desc) : m_VertexShader(vs), m_HullShader(hs), m_DomainShader(ds), m_GeometryShader(gs),
+			m_PixelShader(ps), m_ComputeShader(cs), m_vsBlob(vsBlob), m_Desc(desc) { std::cout << "ShaderProgramData being created..." << std::endl; }
 
 	private:
 		friend class ShaderProgram;
@@ -23,6 +23,7 @@ namespace Core {
 		ID3D11DomainShader* m_DomainShader;
 		ID3D11GeometryShader* m_GeometryShader;
 		ID3D11PixelShader* m_PixelShader;
+		ID3D11ComputeShader* m_ComputeShader;
 
 		ID3D10Blob* m_vsBlob;
 

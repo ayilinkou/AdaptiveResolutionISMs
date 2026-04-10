@@ -41,12 +41,12 @@ void AppLayer::OnRender(double dt)
 {
 	{
 		Timer timer("RenderShadowPass()");
-		m_RenderQueue->RenderShadowPass();
+		m_RenderQueue->RenderShadowPass(m_ShadowType);
 	}
 
 	{
 		Timer timer("RenderMainPass()");
-		m_RenderQueue->RenderMainPass();
+		m_RenderQueue->RenderMainPass(m_ShadowType);
 	}
 }
 

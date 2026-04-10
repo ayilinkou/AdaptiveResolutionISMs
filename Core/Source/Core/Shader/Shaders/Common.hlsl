@@ -1,7 +1,7 @@
 #include "GlobalCBuffer.hlsl"
 
 SamplerState linearSampler : register(s0);
-SamplerComparisonState shadowSampler : register(s1);
+SamplerState shadowSampler : register(s1);
 
 Texture2DArray dirShadowMaps : register(t3);
 Texture2DArray spotShadowMaps : register(t4);
@@ -39,7 +39,11 @@ float3 _CalcSpotLight(uint lightIndex, float3 pixelColor, float3 worldPos, float
 	shadowUV.y = -lightNDC.y * 0.5f + 0.5f;
 	
 	float bias = CalcBias(0.000005f, 0.0005f, worldNormal, -spotLight.Dir);
-	float shadow = spotShadowMaps.SampleCmpLevelZero(shadowSampler, float3(shadowUV, lightIndex), currentDepth - bias);
+	float depth = spotShadowMaps.Sample(shadowSampler, float3(shadowUV, lightIndex)).r;
+	
+	float shadow = depth > currentDepth - bias ? 1.f : 0.f;
+	if (shadow <= 0.f)
+		return float3(0.f, 0.f, 0.f);
 
 	float geometryTerm = pow(dot(-spotLight.Dir, worldNormal) * 0.5f + 0.5f, 2.f); // Valve's half lambert
 	float3 diffuse = spotLight.Color * pixelColor * geometryTerm;
@@ -78,9 +82,10 @@ float3 _CalcPointLight(uint lightIndex, float3 pixelColor, float3 worldPos, floa
 	float normalizedDepth = shadowMapDist / pLight.Radius;
 	
 	float bias = CalcBias(0.0005f, 0.005f, worldNormal, -shadowMapDirNorm);
-	float shadow = pointShadowMaps.SampleCmpLevelZero(shadowSampler, float4(shadowMapDirNorm, lightIndex), normalizedDepth - bias);
+	float depth = pointShadowMaps.Sample(shadowSampler, float4(shadowMapDirNorm, lightIndex)).r;
 	
-	if (shadow == 0.f)
+	float shadow = depth > normalizedDepth - bias ? 1.f : 0.f;
+	if (shadow <= 0.f)
 		return float3(0.f, 0.f, 0.f);
 	
 	float attenuation = 1.f / (pLight.Attenuation.x * d * d + pLight.Attenuation.y * d + pLight.Attenuation.z);
@@ -121,7 +126,11 @@ float3 _CalcDirectionalLight(uint lightIndex, float3 pixelColor, float3 worldPos
 	shadowUV.y = -lightNDC.y * 0.5f + 0.5f;
 	
 	float bias = CalcBias(0.0005f, 0.0001f, worldNormal, -dirLight.Dir);
-	float shadow = dirShadowMaps.SampleCmpLevelZero(shadowSampler, float3(shadowUV, lightIndex), currentDepth - bias);
+	float depth = dirShadowMaps.Sample(shadowSampler, float3(shadowUV, lightIndex)).r;
+	
+	float shadow = depth > currentDepth - bias ? 1.f : 0.f;
+	if (shadow <= 0.f)
+		return float3(0.f, 0.f, 0.f);
 
 	float geometryTerm = pow(dot(-dirLight.Dir, worldNormal) * 0.5f + 0.5f, 2.f); // Valve's half lambert
 	float3 diffuse = dirLight.Color * pixelColor * geometryTerm;

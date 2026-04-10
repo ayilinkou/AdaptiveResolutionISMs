@@ -80,6 +80,7 @@ namespace Core {
 		ID3D11DomainShader* ds = nullptr;
 		ID3D11GeometryShader* gs = nullptr;
 		ID3D11PixelShader* ps = nullptr;
+		ID3D11ComputeShader* cs = nullptr;
 		ID3D10Blob* vsBlob = nullptr;
 
 		if (!desc.Vertex.Filepath.empty())
@@ -92,8 +93,10 @@ namespace Core {
 			gs = LoadShader<ID3D11GeometryShader>(desc.Geometry.Filepath, desc.Geometry.Entry);
 		if (!desc.Pixel.Filepath.empty())
 			ps = LoadShader<ID3D11PixelShader>(desc.Pixel.Filepath, desc.Pixel.Entry);
+		if (!desc.Compute.Filepath.empty())
+			cs = LoadShader<ID3D11ComputeShader>(desc.Compute.Filepath, desc.Compute.Entry);
 
-		return ShaderProgramData(vs, hs, ds, gs, ps, vsBlob, desc); // as far as I know, this will not make a copy on C++17 and newer
+		return ShaderProgramData(vs, hs, ds, gs, ps, cs, vsBlob, desc); // as far as I know, this will not make a copy on C++17 and newer
 	}
 
 	UINT ResourceManager::UnloadTexture(const std::string& filepath)
@@ -146,6 +149,8 @@ namespace Core {
 			UnloadShader<ID3D11GeometryShader>(desc.Geometry.Filepath, desc.Geometry.Entry);
 		if (!desc.Pixel.Filepath.empty())
 			UnloadShader<ID3D11PixelShader>(desc.Pixel.Filepath, desc.Pixel.Entry);
+		if (!desc.Compute.Filepath.empty())
+			UnloadShader<ID3D11ComputeShader>(desc.Compute.Filepath, desc.Compute.Entry);
 	}
 
 	void ResourceManager::Internal_UnloadTexture(const std::string filepath)

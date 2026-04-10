@@ -17,6 +17,7 @@ build/
 
 App/shader-error.txt
 /temp
+Images/**
 
 # Ignore models
 App/Models/**

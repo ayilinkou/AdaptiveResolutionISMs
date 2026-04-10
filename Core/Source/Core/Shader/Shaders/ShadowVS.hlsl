@@ -29,7 +29,8 @@ cbuffer ModelWorldBuffer : register(b2)
 
 cbuffer LightBuffer : register(b3)
 {
-	float4x4 lightViewProj;
+	float4x4 lightView;
+	float4x4 lightProj;
 	uint lightIndex;
 	float3 padding1;
 }
@@ -43,7 +44,7 @@ VS_Out main(VS_In v)
 	o.pos = mul(float4(v.pos, 1.f), localTransforms[modelID]); // to model space
 	o.pos = mul(o.pos, worldTransforms[instanceID]); // to world space
 	o.worldPos = o.pos.xyz;
-	o.pos = mul(o.pos, lightViewProj);
+	o.pos = mul(mul(o.pos, lightView), lightProj);
 	
 	return o;
 }

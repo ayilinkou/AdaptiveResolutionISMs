@@ -19,10 +19,10 @@ inline DirectX::XMVECTOR ComputeSafeUpVector(const DirectX::XMVECTOR& dir)
 }
 
 namespace Core {
-	constexpr UINT SHADOW_MAP_RES = 512u;
-	D3D11_VIEWPORT SpotLight::s_ShadowMapViewport = { 0.f, 0.f, (float)SHADOW_MAP_RES, (float)SHADOW_MAP_RES, 0.f, 1.f };
-	std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> SpotLight::s_DSVs;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> SpotLight::s_ShadowMapDSVs;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SpotLight::s_ShadowMapsSRV;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>> SpotLight::s_ISM_UAVs;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SpotLight::s_ISM_SRV;
 
 	SpotLight::SpotLight(DirectX::XMFLOAT3 color, DirectX::XMFLOAT3 attenuation, DirectX::XMFLOAT3 dir)
 		: m_LocalPosition({ 0.f, 0.f, 0.f })
@@ -47,7 +47,8 @@ namespace Core {
 		HRESULT hResult;
 		ID3D11Device* pDevice = Renderer::Get()->GetDevice().Get();
 
-		Microsoft::WRL::ComPtr<ID3D11Texture2D> textureArray;
+		// shadow maps
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> shadowMapTextureArray;
 		D3D11_TEXTURE2D_DESC texDesc = {};
 		texDesc.Width = (UINT)s_ShadowMapViewport.Width;
 		texDesc.Height = (UINT)s_ShadowMapViewport.Height;
@@ -58,8 +59,8 @@ namespace Core {
 		texDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
 
-		ASSERT_NOT_FAILED(pDevice->CreateTexture2D(&texDesc, nullptr, &textureArray));
-		NAME_D3D_RESOURCE(textureArray, "Spot light shadow maps texture array");
+		ASSERT_NOT_FAILED(pDevice->CreateTexture2D(&texDesc, nullptr, &shadowMapTextureArray));
+		NAME_D3D_RESOURCE(shadowMapTextureArray, "Spot light shadow maps texture array");
 
 		for (UINT i = 0; i < MAX_SPOT_LIGHT_COUNT; i++)
 		{
@@ -70,9 +71,9 @@ namespace Core {
 			dsvDesc.Texture2DArray.FirstArraySlice = i;
 
 			Microsoft::WRL::ComPtr<ID3D11DepthStencilView> dsv;
-			ASSERT_NOT_FAILED(pDevice->CreateDepthStencilView(textureArray.Get(), &dsvDesc, &dsv));
+			ASSERT_NOT_FAILED(pDevice->CreateDepthStencilView(shadowMapTextureArray.Get(), &dsvDesc, &dsv));
 			NAME_D3D_RESOURCE(dsv, (std::string("Spot light shadow map DSV ") + std::to_string(i)).c_str());
-			s_DSVs.push_back(dsv);
+			s_ShadowMapDSVs.push_back(dsv);
 		}
 
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -81,14 +82,48 @@ namespace Core {
 		srvDesc.Texture2DArray.MipLevels = 1u;
 		srvDesc.Texture2DArray.ArraySize = MAX_SPOT_LIGHT_COUNT;
 
-		ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(textureArray.Get(), &srvDesc, &s_ShadowMapsSRV));
+		ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(shadowMapTextureArray.Get(), &srvDesc, &s_ShadowMapsSRV));
 		NAME_D3D_RESOURCE(s_ShadowMapsSRV, "Spot light shadow maps SRV");
+
+		// ISMs
+		UINT ismMipCount = 1u; // TODO: will change this when need pull push algorithm
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> ISMTextureArray;
+		texDesc.Width = (UINT)s_ISMViewport.Width;
+		texDesc.Height = (UINT)s_ISMViewport.Height;
+		texDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+		texDesc.ArraySize = MAX_SPOT_LIGHT_COUNT;
+		texDesc.MipLevels = ismMipCount; 
+		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+
+		ASSERT_NOT_FAILED(pDevice->CreateTexture2D(&texDesc, nullptr, &ISMTextureArray));
+		NAME_D3D_RESOURCE(ISMTextureArray, "Spot light ISMs texture array");
+
+		for (UINT i = 0u; i < MAX_SPOT_LIGHT_COUNT; i++)
+		{
+			D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+			uavDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+			uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
+			uavDesc.Texture2DArray.ArraySize = 1u;
+			uavDesc.Texture2DArray.FirstArraySlice = i;
+
+			Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> uav;
+			ASSERT_NOT_FAILED(pDevice->CreateUnorderedAccessView(ISMTextureArray.Get(), &uavDesc, &uav));
+			NAME_D3D_RESOURCE(uav, (std::string("Spot light ISM UAV ") + std::to_string(i)).c_str());
+			s_ISM_UAVs.push_back(uav);
+		}
+
+		srvDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+		srvDesc.Texture2DArray.MipLevels = ismMipCount;
+		ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(ISMTextureArray.Get(), &srvDesc, &s_ISM_SRV));
+		NAME_D3D_RESOURCE(s_ISM_SRV, "Spot light ISMs SRV");
 	}
 
 	void SpotLight::ShutdownStatics()
 	{
 		s_ShadowMapsSRV.Reset();
-		s_DSVs.clear();
+		s_ShadowMapDSVs.clear();
+		s_ISM_SRV.Reset();
+		s_ISM_UAVs.clear();
 	}
 
 	void SpotLight::RenderControls()
@@ -170,7 +205,7 @@ namespace Core {
 
 		DirectX::XMVECTOR up = ComputeSafeUpVector(dir);
 		const DirectX::XMVECTOR dirCrossUp = DirectX::XMVector3Cross(dir, up);
-		DirectX::XMVECTOR lightUp = DirectX::XMVector3Cross(dir, dirCrossUp); // this might be upside down but don't think it really matters
+		DirectX::XMVECTOR lightUp = DirectX::XMVector3Cross(dirCrossUp, dir); // this might be upside down but don't think it really matters
 		m_View = DirectX::XMMatrixLookAtLH(lightPos, focus, lightUp);
 
 		UpdateViewProj();

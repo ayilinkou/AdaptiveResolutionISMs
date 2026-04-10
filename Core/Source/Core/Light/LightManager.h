@@ -27,7 +27,8 @@ namespace Core {
 
 	struct LightCBuffer
 	{
-		DirectX::XMMATRIX ViewProj;
+		DirectX::XMMATRIX View;
+		DirectX::XMMATRIX Proj;
 		UINT LightIndex;
 		DirectX::XMFLOAT3 Padding;
 	};
@@ -52,7 +53,7 @@ namespace Core {
 		static float& GetAmbientStrengthRef() { return s_AmbientStrength; }
 
 		static void UpdateLightBufferData();
-		static void UpdateLightCBuffer(const DirectX::XMMATRIX& viewProjT, UINT lightIndex);
+		static void UpdateLightCBuffer(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, UINT lightIndex);
 
 	private:
 		static void CreateBuffer();

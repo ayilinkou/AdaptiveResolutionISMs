@@ -18,5 +18,6 @@ namespace Core {
 		ShaderDesc Domain;
 		ShaderDesc Geometry;
 		ShaderDesc Pixel;
+		ShaderDesc Compute;
 	};
 }

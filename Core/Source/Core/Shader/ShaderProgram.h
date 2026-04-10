@@ -11,6 +11,7 @@ struct ID3D11HullShader;
 struct ID3D11DomainShader;
 struct ID3D11GeometryShader;
 struct ID3D11PixelShader;
+struct ID3D11ComputeShader;
 
 namespace Core {	
 	class ShaderProgram
@@ -19,6 +20,8 @@ namespace Core {
 		ShaderProgram() = delete;
 		ShaderProgram(ShaderProgramDesc& desc);
 		~ShaderProgram();
+
+		void Bind();
 
 	private:
 		const ShaderProgramData m_ShaderProgramData;
@@ -29,6 +32,7 @@ namespace Core {
 		ID3D11DomainShader* GetDomainShader() const;
 		ID3D11GeometryShader* GetGeometryShader() const;
 		ID3D11PixelShader* GetPixelShader() const;
+		ID3D11ComputeShader* GetComputeShader() const;
 
 		ID3D10Blob* GetVertexShaderBlob() const;
 	};

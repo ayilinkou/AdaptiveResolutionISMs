@@ -29,6 +29,8 @@ namespace Core {
 		virtual void SetIntensity(float intensity) override { m_Data.Intensity = intensity; }
 
 		const DirectionalLightData& GetData() const { return m_Data; }
+		const DirectX::XMMATRIX& GetViewT() const { return m_ViewT; }
+		static const DirectX::XMMATRIX& GetProjT() { return s_ProjT; }
 
 		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>>& GetDSVs() { return s_DSVs; }
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetShadowMapsSRV() { return s_ShadowMapsSRV; }
@@ -40,11 +42,13 @@ namespace Core {
 	
 	private:
 		DirectionalLightData m_Data;
+		DirectX::XMMATRIX m_ViewT;
 		
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_ShadowMapsSRV;
 		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> s_DSVs;
-		static D3D11_VIEWPORT s_ShadowMapViewport;
-		static DirectX::XMMATRIX s_Proj;
+		static const D3D11_VIEWPORT s_ShadowMapViewport;
+		static const DirectX::XMMATRIX s_Proj;
+		static const DirectX::XMMATRIX s_ProjT;
 
 		friend class LightManager;
 	};

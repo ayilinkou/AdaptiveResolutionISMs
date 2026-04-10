@@ -77,7 +77,7 @@ namespace Core {
 		void BindForOpaqueDraws();
 		void BindForTransparentDraws();
 		void BindForDSVShadowPass();
-		void BindForPointShadowPass();
+		void BindForPointLightShadowPass();
 		void SetBackFaceCulling(bool bEnabled);
 		void SetBackBufferViewport();
 

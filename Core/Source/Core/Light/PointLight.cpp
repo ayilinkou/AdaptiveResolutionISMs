@@ -136,7 +136,7 @@ namespace Core {
 		m_Proj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(90.f), 1.f, 0.1f, m_Data.Radius);
 	}
 
-	std::array<DirectX::XMMATRIX, 6> PointLight::GetViewProjectionsT() const
+	const std::array<DirectX::XMMATRIX, 6> PointLight::GetViewsT() const
 	{
 		DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&m_Data.Position);
 
@@ -148,11 +148,11 @@ namespace Core {
 		views[4] = DirectX::XMMatrixLookAtLH(pos, DirectX::XMVectorAdd(pos, DirectX::XMVectorSet( 0,  0,  1, 0)), DirectX::XMVectorSet(0, 1,  0, 0)); // +Z
 		views[5] = DirectX::XMMatrixLookAtLH(pos, DirectX::XMVectorAdd(pos, DirectX::XMVectorSet( 0,  0, -1, 0)), DirectX::XMVectorSet(0, 1,  0, 0)); // -Z
 
-		std::array<DirectX::XMMATRIX, 6> viewProjectionsT;
+		std::array<DirectX::XMMATRIX, 6> viewsT;
 		for (int i = 0; i < 6; i++)
 		{
-			viewProjectionsT[i] = DirectX::XMMatrixTranspose(DirectX::XMMatrixMultiply(views[i], m_Proj));
+			viewsT[i] = DirectX::XMMatrixTranspose(views[i]);
 		}
-		return viewProjectionsT;
+		return viewsT;
 	}
 }

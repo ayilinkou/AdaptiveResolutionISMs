@@ -143,7 +143,7 @@ namespace Core {
 		}
 	}
 
-	void LightManager::UpdateLightCBuffer(const DirectX::XMMATRIX& viewProjT, UINT lightIndex)
+	void LightManager::UpdateLightCBuffer(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, UINT lightIndex)
 	{
 		HRESULT hResult;
 		ID3D11DeviceContext* pContext = Renderer::Get()->GetContext().Get();
@@ -151,7 +151,8 @@ namespace Core {
 
 		ASSERT_NOT_FAILED(pContext->Map(s_LightCBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mappedResource));
 		LightCBuffer* dataPtr = (LightCBuffer*)mappedResource.pData;
-		dataPtr->ViewProj = viewProjT;
+		dataPtr->View = viewT;
+		dataPtr->Proj = projT;
 		dataPtr->LightIndex = lightIndex;
 		pContext->Unmap(s_LightCBuffer.Get(), 0u);
 	}

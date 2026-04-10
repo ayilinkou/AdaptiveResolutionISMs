@@ -31,7 +31,8 @@ namespace Core {
 		virtual void SetIntensity(float intensity) { m_Data.Intensity = intensity; }
 
 		const PointLightData& GetData() const { return m_Data; }
-		std::array<DirectX::XMMATRIX, 6> GetViewProjectionsT() const;
+		const std::array<DirectX::XMMATRIX, 6> GetViewsT() const;
+		const DirectX::XMMATRIX GetProjT() const { return DirectX::XMMatrixTranspose(m_Proj); }
 		static const D3D11_VIEWPORT& GetShadowMapViewport() { return s_ShadowMapViewport; }
 		static std::vector<Microsoft::WRL::ComPtr<ID3D11RenderTargetView>>& GetRTVs() { return s_RTVs; }
 		static Microsoft::WRL::ComPtr<ID3D11DepthStencilView>& GetDSV() { return s_DSV; }

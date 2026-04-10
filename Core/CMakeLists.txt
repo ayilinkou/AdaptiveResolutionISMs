@@ -79,11 +79,15 @@ set(SOURCES
 set(SHADER_FILES
     Source/Core/Shader/Shaders/GlobalCBuffer.hlsl
     Source/Core/Shader/Shaders/Common.hlsl
-    Source/Core/Shader/Shaders/BasicPS.hlsl
-    Source/Core/Shader/Shaders/TransparentPS.hlsl
+
     Source/Core/Shader/Shaders/BasicVS.hlsl
     Source/Core/Shader/Shaders/ShadowVS.hlsl
+
+    Source/Core/Shader/Shaders/BasicPS.hlsl
+    Source/Core/Shader/Shaders/TransparentPS.hlsl
     Source/Core/Shader/Shaders/PointLightShadowPS.hlsl
+
+    Source/Core/Shader/Shaders/ISMSplatCS.hlsl
 )
 
 set_property(SOURCE ${SHADER_FILES} PROPERTY VS_SETTINGS "ExcludedFromBuild=true")
@@ -117,4 +121,5 @@ target_link_libraries(Core PUBLIC
 	dxgi
 	d3dcompiler
 	dxguid
+	PointCloudConverter
 )

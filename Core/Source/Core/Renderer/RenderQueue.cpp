@@ -1,9 +1,10 @@
 #include "RenderQueue.h"
+#include "Renderer.h"
 #include "Core/Model/Model.h"
 #include "Core/Model/ModelData.h"
-#include "Renderer.h"
-#include "Core/Utility/MyMacros.h"
 #include "Core/Model/ModelSystem.h"
+#include "Core/Utility/MyMacros.h"
+#include "Core/Utility/Constants.h"
 #include "Core/Light/LightManager.h"
 
 namespace Core {
@@ -15,6 +16,10 @@ namespace Core {
 	void RenderQueue::Init()
 	{
 		CreateBuffers();
+
+		ShaderProgramDesc desc = {};
+		desc.Compute.Filepath = "../Core/Source/Core/Shader/Shaders/ISMSplatCS.hlsl";
+		m_IsmSplatShaderProgram = std::make_unique<ShaderProgram>(desc);
 	}
 	
 	void RenderQueue::Add(Model* pModel)
@@ -37,116 +42,45 @@ namespace Core {
 		}
 	}
 
-	void RenderQueue::RenderMainPass()
+	void RenderQueue::RenderMainPass(ShadowType shadowType)
 	{
 		Renderer* pRenderer = Core::Renderer::Get();
 		ID3D11DeviceContext* pContext = pRenderer->GetContext().Get();
 		pContext->OMSetRenderTargets(1u, pRenderer->GetBackBufferRTV().GetAddressOf(), pRenderer->GetDSV().Get());
 		pRenderer->SetBackBufferViewport();
-		RenderPass(RenderPassType::Main);
+		RenderPass(RenderPassType::Main, shadowType);
 
 		ID3D11ShaderResourceView* nullSRVs[] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 		pContext->VSSetShaderResources(1u, _countof(nullSRVs), nullSRVs);
 		pContext->PSSetShaderResources(1u, _countof(nullSRVs), nullSRVs);
 	}
 
-	void RenderQueue::RenderShadowPass()
+	void RenderQueue::RenderShadowPass(ShadowType shadowType)
 	{
-		Renderer* pRenderer = Core::Renderer::Get();
-		ID3D11DeviceContext* pContext = pRenderer->GetContext().Get();
-		pContext->VSSetConstantBuffers(3u, 1u, LightManager::GetLightCBuffer().GetAddressOf());
-
-		const auto& dirLights = LightManager::GetDirectionalLights();
-		if (!dirLights.empty())
+		ID3D11DeviceContext* pContext = Core::Renderer::Get()->GetContext().Get();
+		
+		switch (shadowType)
 		{
-			pRenderer->BindForDSVShadowPass();
-			pContext->RSSetViewports(1u, &DirectionalLight::GetShadowMapViewport());
-			const auto& dirDSVs = DirectionalLight::GetDSVs();
-			UINT activeDirLightCount = 0u;
-			UINT dirLightCount = min((UINT)dirLights.size(), MAX_DIRECTIONAL_LIGHT_COUNT);
-			for (UINT i = 0u; i < dirLightCount; i++)
-			{
-				DirectionalLight* dirLight = dirLights[i];
-				if (!dirLight->IsActive())
-					continue;
-				
-				LightManager::UpdateLightCBuffer(dirLight->GetData().ViewProj, activeDirLightCount);
-			
-				pContext->ClearDepthStencilView(dirDSVs[activeDirLightCount].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
-				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[activeDirLightCount].Get());
-
-				RenderPass(RenderPassType::Shadow);
-				activeDirLightCount++;
-			}
+		case ShadowType::ShadowMap:
+		{
+			ShadowMapPass();
+			break;
+		}
+		case ShadowType::ISM:
+		{
+			ISMPass();
+			break;
+		}
+		default:
+			break;
 		}
 
-		const auto& spotLights = LightManager::GetSpotLights();
-		if (!spotLights.empty())
-		{
-			pRenderer->BindForDSVShadowPass();
-			pContext->RSSetViewports(1u, &SpotLight::GetShadowMapViewport());
-			const auto& dirDSVs = SpotLight::GetDSVs();
-			UINT activeSpotLightCount = 0u;
-			UINT spotLightCount = min((UINT)spotLights.size(), MAX_SPOT_LIGHT_COUNT);
-			for (UINT i = 0u; i < spotLightCount; i++)
-			{
-				SpotLight* spotLight = spotLights[i];
-				if (!spotLight->IsActive())
-					continue;
-
-				LightManager::UpdateLightCBuffer(spotLight->GetData().ViewProj, activeSpotLightCount);
-
-				pContext->ClearDepthStencilView(dirDSVs[activeSpotLightCount].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
-				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[activeSpotLightCount].Get());
-
-				RenderPass(RenderPassType::Shadow);
-				activeSpotLightCount++;
-			}
-		}
-
-		const auto& pointLights = LightManager::GetPointLights();
-		if (!pointLights.empty())
-		{
-			pRenderer->BindForPointShadowPass();
-			pContext->PSSetConstantBuffers(1u, 1u, LightManager::GetLightCBuffer().GetAddressOf());
-			pContext->RSSetViewports(1u, &PointLight::GetShadowMapViewport());
-			const auto& pointRTVs = PointLight::GetRTVs();
-			const auto& pointDSV = PointLight::GetDSV();
-
-			float RTVClearColor[4] = { 1.f, 1.f, 1.f, 1.f };
-			UINT pointLightCount = min((UINT)pointLights.size(), MAX_POINT_LIGHT_COUNT);
-			UINT activePointLightIndex = 0u;
-			for (UINT pLightIndex = 0u; pLightIndex < pointLightCount; pLightIndex++)
-			{	
-				PointLight* pLight = pointLights[pLightIndex];
-				if (!pLight->IsActive())
-					continue;
-
-				const std::array<DirectX::XMMATRIX, 6> viewProjectionsT = pLight->GetViewProjectionsT();
-			
-				// for each face
-				for (UINT face = 0u; face < 6u; face++)
-				{
-					Microsoft::WRL::ComPtr<ID3D11RenderTargetView> RTV = pointRTVs[activePointLightIndex * 6 + face];
-				
-					pContext->ClearRenderTargetView(RTV.Get(), reinterpret_cast<float*>(&RTVClearColor));
-					pContext->ClearDepthStencilView(pointDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
-
-					LightManager::UpdateLightCBuffer(viewProjectionsT[face], pLightIndex);
-					pContext->OMSetRenderTargets(1u, RTV.GetAddressOf(), pointDSV.Get());
-
-					RenderPass(RenderPassType::Shadow);
-				}
-				activePointLightIndex++;
-			}
-		}
-
-		ID3D11ShaderResourceView* nullSRVs[] = {nullptr, nullptr};
-		pContext->PSSetShaderResources(2u, _countof(nullSRVs), nullSRVs);
+		ID3D11ShaderResourceView* nullSRVs[] = {nullptr, nullptr, nullptr, nullptr};
+		pContext->PSSetShaderResources(1u, _countof(nullSRVs), nullSRVs);
 		pContext->OMSetRenderTargets(0u, nullptr, nullptr);
 	}
 
-	void Core::RenderQueue::RenderPass(RenderPassType passType)
+	void Core::RenderQueue::RenderPass(RenderPassType passType, ShadowType shadowType)
 	{
 		Renderer* pRenderer = Core::Renderer::Get();
 		ID3D11DeviceContext* pContext = pRenderer->GetContext().Get();
@@ -156,9 +90,31 @@ namespace Core {
 
 		if (passType == RenderPassType::Main)
 		{
-			ID3D11ShaderResourceView* shadowMapSRVs[3] = { DirectionalLight::GetShadowMapsSRV().Get(), SpotLight::GetShadowMapsSRV().Get(),
-				PointLight::GetShadowMapsSRV().Get() };
-			pContext->PSSetShaderResources(3u, _countof(shadowMapSRVs), shadowMapSRVs);
+			ID3D11ShaderResourceView* shadowSRVs[3] = { nullptr, nullptr, nullptr };
+
+			switch (shadowType)
+			{
+			case Core::ShadowType::ShadowMap:
+			{
+				shadowSRVs[0] = DirectionalLight::GetShadowMapsSRV().Get();
+				shadowSRVs[1] = SpotLight::GetShadowMapsSRV().Get();
+				shadowSRVs[2] = PointLight::GetShadowMapsSRV().Get();
+				break;
+			}
+			case Core::ShadowType::ISM:
+			{
+				shadowSRVs[0] = DirectionalLight::GetShadowMapsSRV().Get(); // TODO: do I want to do these too or just spot lights are enough?
+				shadowSRVs[1] = SpotLight::GetISM_SRV().Get();
+				shadowSRVs[2] = PointLight::GetShadowMapsSRV().Get(); // TODO: do I want to do these too or just spot lights are enough?
+				break;
+			}
+			case Core::ShadowType::None:
+				break;
+			default:
+				break;
+			}
+
+			pContext->PSSetShaderResources(3u, _countof(shadowSRVs), shadowSRVs);
 		}
 
 		// opaque
@@ -238,6 +194,149 @@ namespace Core {
 		}
 	}
 
+	void RenderQueue::ShadowMapPass()
+	{
+		Renderer* pRenderer = Core::Renderer::Get();
+		ID3D11DeviceContext* pContext = pRenderer->GetContext().Get();
+		pContext->VSSetConstantBuffers(3u, 1u, LightManager::GetLightCBuffer().GetAddressOf());
+
+		const auto& dirLights = LightManager::GetDirectionalLights();
+		if (!dirLights.empty())
+		{
+			pRenderer->BindForDSVShadowPass();
+			pContext->RSSetViewports(1u, &DirectionalLight::GetShadowMapViewport());
+			const auto& dirDSVs = DirectionalLight::GetDSVs();
+			UINT activeDirLightCount = 0u;
+			UINT dirLightCount = min((UINT)dirLights.size(), MAX_DIRECTIONAL_LIGHT_COUNT);
+			for (UINT i = 0u; i < dirLightCount; i++)
+			{
+				DirectionalLight* dirLight = dirLights[i];
+				if (!dirLight->IsActive())
+					continue;
+
+				LightManager::UpdateLightCBuffer(dirLight->GetViewT(), dirLight->GetProjT(), activeDirLightCount);
+
+				pContext->ClearDepthStencilView(dirDSVs[activeDirLightCount].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
+				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[activeDirLightCount].Get());
+
+				RenderPass(RenderPassType::Shadow, ShadowType::ShadowMap);
+				activeDirLightCount++;
+			}
+		}
+
+		const auto& spotLights = LightManager::GetSpotLights();
+		if (!spotLights.empty())
+		{
+			pRenderer->BindForDSVShadowPass();
+			pContext->RSSetViewports(1u, &SpotLight::GetShadowMapViewport());
+			const auto& spotDSVs = SpotLight::GetShadowMapDSVs();
+			UINT activeSpotLightCount = 0u;
+			UINT spotLightCount = min((UINT)spotLights.size(), MAX_SPOT_LIGHT_COUNT);
+			for (UINT i = 0u; i < spotLightCount; i++)
+			{
+				SpotLight* spotLight = spotLights[i];
+				if (!spotLight->IsActive())
+					continue;
+
+				LightManager::UpdateLightCBuffer(spotLight->GetViewT(), spotLight->GetProjT(), activeSpotLightCount);
+
+				pContext->ClearDepthStencilView(spotDSVs[activeSpotLightCount].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
+				pContext->OMSetRenderTargets(0u, nullptr, spotDSVs[activeSpotLightCount].Get());
+
+				RenderPass(RenderPassType::Shadow, ShadowType::ShadowMap);
+				activeSpotLightCount++;
+			}
+		}
+
+		const auto& pointLights = LightManager::GetPointLights();
+		if (!pointLights.empty())
+		{
+			pRenderer->BindForPointLightShadowPass();
+			pContext->PSSetConstantBuffers(1u, 1u, LightManager::GetLightCBuffer().GetAddressOf());
+			pContext->RSSetViewports(1u, &PointLight::GetShadowMapViewport());
+			const auto& pointRTVs = PointLight::GetRTVs();
+			const auto& pointDSV = PointLight::GetDSV();
+
+			float RTVClearColor[4] = { 1.f, 1.f, 1.f, 1.f };
+			UINT pointLightCount = min((UINT)pointLights.size(), MAX_POINT_LIGHT_COUNT);
+			UINT activePointLightIndex = 0u;
+			for (UINT pLightIndex = 0u; pLightIndex < pointLightCount; pLightIndex++)
+			{
+				PointLight* pLight = pointLights[pLightIndex];
+				if (!pLight->IsActive())
+					continue;
+
+				const std::array<DirectX::XMMATRIX, 6> viewsT = pLight->GetViewsT();
+
+				// for each face
+				for (UINT face = 0u; face < 6u; face++)
+				{
+					Microsoft::WRL::ComPtr<ID3D11RenderTargetView> RTV = pointRTVs[activePointLightIndex * 6 + face];
+
+					pContext->ClearRenderTargetView(RTV.Get(), reinterpret_cast<float*>(&RTVClearColor));
+					pContext->ClearDepthStencilView(pointDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
+
+					LightManager::UpdateLightCBuffer(viewsT[face], pLight->GetProjT(), pLightIndex);
+					pContext->OMSetRenderTargets(1u, RTV.GetAddressOf(), pointDSV.Get());
+
+					RenderPass(RenderPassType::Shadow, ShadowType::ShadowMap);
+				}
+				activePointLightIndex++;
+			}
+		}
+	}
+
+	void RenderQueue::ISMPass()
+	{
+		ID3D11DeviceContext* pContext = Core::Renderer::Get()->GetContext().Get();
+		pContext->CSSetConstantBuffers(1u, 1u, m_ISMSplatCBuffer.GetAddressOf());
+		
+		const auto& spotLights = LightManager::GetSpotLights();
+		if (!spotLights.empty())
+		{
+			pContext->RSSetViewports(1u, &SpotLight::GetISMViewport());
+			const auto& spotUAVs = SpotLight::GetISM_UAVs();
+			UINT activeSpotLightCount = 0u;
+			UINT spotLightCount = min((UINT)spotLights.size(), MAX_SPOT_LIGHT_COUNT);
+			for (UINT i = 0u; i < spotLightCount; i++)
+			{
+				SpotLight* spotLight = spotLights[i];
+				if (!spotLight->IsActive())
+					continue;
+
+				auto& uav = spotUAVs[activeSpotLightCount];
+
+				float clearValues[2] = { 0.f, 0.f };
+				pContext->ClearUnorderedAccessViewFloat(uav.Get(), clearValues);
+				pContext->CSSetUnorderedAccessViews(0u, 1u, uav.GetAddressOf(), nullptr);
+				pContext->CSSetShader(m_IsmSplatShaderProgram->GetComputeShader(), nullptr, 0u);
+
+				DispatchISMSplat(spotLight->GetViewT(), spotLight->GetProjT(), SpotLight::GetISM_Res(), activeSpotLightCount);
+				activeSpotLightCount++;
+			}
+		}
+
+		ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
+		pContext->CSSetUnorderedAccessViews(0u, 1u, nullUAVs, nullptr);
+	}
+
+	void RenderQueue::DispatchISMSplat(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, const UINT ismRes, const UINT lightIndex)
+	{
+		ID3D11DeviceContext* pContext = Core::Renderer::Get()->GetContext().Get();
+		
+		for (const auto& [pModelData, modelWorldTransformsT] : m_ModelWorldTransformsMapT)
+		{
+			// point cloud is guaranteed to only contain points for opaque meshes so no need to check here
+			UINT pointCount = pModelData->GetPointCloudCount();
+			UpdateSplatCBuffer(viewT, projT, pointCount, ismRes, lightIndex);
+			pContext->CSSetShaderResources(0u, 1u, pModelData->GetPointCloudSRV().GetAddressOf());
+
+			const UINT groupsX = (ismRes + ISM_SPLAT_THREADS_X - 1) / ISM_SPLAT_THREADS_X;
+			const UINT groupsY = (ismRes + ISM_SPLAT_THREADS_Y - 1) / ISM_SPLAT_THREADS_Y;
+			pContext->Dispatch(groupsX, groupsY, 1u);
+		}
+	}
+
 	void RenderQueue::CreateBuffers()
 	{
 		HRESULT hResult;
@@ -255,6 +354,11 @@ namespace Core {
 
 		ASSERT_NOT_FAILED(pDevice->CreateBuffer(&desc, nullptr, &m_ModelWorldCBuffer));
 		NAME_D3D_RESOURCE(m_ModelWorldCBuffer, "RenderQueue model world constant buffer");
+
+		desc.ByteWidth = sizeof(SplatBufferData);
+
+		ASSERT_NOT_FAILED(pDevice->CreateBuffer(&desc, nullptr, &m_ISMSplatCBuffer));
+		NAME_D3D_RESOURCE(m_ISMSplatCBuffer, "RenderQueue ISM splat constant buffer");
 	}
 
 	void RenderQueue::UpdateLocalCBuffer(const std::vector<DirectX::XMMATRIX>& modelLocalTransformsT)
@@ -279,5 +383,22 @@ namespace Core {
 		ASSERT_NOT_FAILED(pContext->Map(m_ModelWorldCBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mappedResource));
 		memcpy(mappedResource.pData, modelWorldTransformsT.data(), sizeof(DirectX::XMMATRIX) * modelWorldTransformsT.size());
 		pContext->Unmap(m_ModelWorldCBuffer.Get(), 0u);
+	}
+
+	void RenderQueue::UpdateSplatCBuffer(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, UINT pointCount, UINT shadowRes,
+		const UINT lightIndex)
+	{
+		HRESULT hResult;
+		ID3D11DeviceContext* pContext = Renderer::Get()->GetContext().Get();
+		D3D11_MAPPED_SUBRESOURCE mappedResource = {};
+
+		ASSERT_NOT_FAILED(pContext->Map(m_ISMSplatCBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mappedResource));
+		SplatBufferData* ptr = (SplatBufferData*)mappedResource.pData;
+		ptr->LightView = viewT;
+		ptr->LightProj = projT;
+		ptr->PointCount = pointCount;
+		ptr->ShadowRes = shadowRes;
+		ptr->LightIndex = lightIndex;
+		pContext->Unmap(m_ISMSplatCBuffer.Get(), 0u);
 	}
 }

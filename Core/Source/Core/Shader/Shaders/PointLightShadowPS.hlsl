@@ -8,7 +8,8 @@ struct PS_In
 
 cbuffer LightBuffer : register(b1)
 {
-	float4x4 lightViewProj;
+	float4x4 lightView;
+	float4x4 lightProj;
 	uint lightIndex;
 	float3 padding;
 }
