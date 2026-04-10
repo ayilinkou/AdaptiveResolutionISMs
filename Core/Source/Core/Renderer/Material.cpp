@@ -34,11 +34,11 @@ namespace Core {
 		}
 
 		// TODO: do I need this? I get normals from vertices
-		if (mat->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
+		/*if (mat->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
 		{
 			std::string fullPath = texturesRoot + path.C_Str();
 			m_NormalTex = std::make_unique<Texture>(fullPath);
-		}
+		}*/
 
 		if (mat->GetTexture(aiTextureType_SPECULAR, 0, &path) == AI_SUCCESS)
 		{
@@ -49,6 +49,17 @@ namespace Core {
 		else if (mat->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS)
 		{
 			m_MatData.Specular = color.r;
+		}
+
+		if (mat->GetTexture(aiTextureType_EMISSIVE, 0, &path) == AI_SUCCESS)
+		{
+			std::string fullPath = texturesRoot + path.C_Str();
+			m_EmissiveTex = std::make_unique<Texture>(fullPath);
+			m_MatData.bHasEmissiveTexture = true;
+		}
+		else if (mat->Get(AI_MATKEY_COLOR_EMISSIVE, color) == AI_SUCCESS)
+		{
+			m_MatData.EmissiveColor = { color.r, color.g, color.b };
 		}
 
 		CreateCBuffer();

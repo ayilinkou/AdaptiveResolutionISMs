@@ -58,16 +58,6 @@ void AppLayer::LoadScene(const std::string& modelPath, const std::string& textur
 	m_Models.emplace_back(std::make_unique<Core::Model>(modelPath, texturesRoot));
 }
 
-void AppLayer::LoadScenes(const std::vector<std::array<const std::string, 2>>& scenes)
-{
-	m_Models.clear();
-	m_Lights.clear();
-	for (const auto& scene : scenes)
-	{
-		m_Models.emplace_back(std::make_unique<Core::Model>(scene[0], scene[1]));
-	}
-}
-
 void AppLayer::AddLight(std::unique_ptr<Core::Light>&& light)
 {
 	m_Lights.push_back(std::move(light));

@@ -17,6 +17,7 @@ namespace Core {
 	{
 		m_Data.Color = color;
 		m_Data.Attenuation = attenuation;
+		m_Name = "Point Light";
 		UpdateProj();
 		LightManager::RegisterLight(this);
 	}

@@ -30,6 +30,7 @@ namespace Core {
 		m_Data.Color = color;
 		m_Data.Attenuation = attenuation;
 		m_Data.Direction = dir;
+		m_Name = "Spot Light";
 		UpdateView();
 		UpdateProj();
 		UpdateViewProj();
@@ -100,14 +101,14 @@ namespace Core {
 			SetPosition(m_LocalPosition.x, m_LocalPosition.y, m_LocalPosition.z);
 
 		DirectX::XMFLOAT3 dir(&m_Data.Direction.x);
-		if (ImGui::DragFloat3("Direction", reinterpret_cast<float*>(&dir)))
+		if (ImGui::DragFloat3("Direction", reinterpret_cast<float*>(&dir), 0.01f))
 			SetDirection(dir.x, dir.y, dir.z);
 
 		ImGui::DragFloat("Attenuation (quadratic)", &m_Data.Attenuation.x, 0.1f);
 		ImGui::DragFloat("Attenuation (linear)", &m_Data.Attenuation.y, 0.1f);
 		ImGui::DragFloat("Attenuation (constant)", &m_Data.Attenuation.z, 0.1f);
 		ImGui::SliderFloat("Specular Power", &m_Data.SpecularPower, 1.f, 2048.f, "%.f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::SliderFloat("Intensity", &m_Data.Intensity, 0.f, 10.f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SliderFloat("Intensity", &m_Data.Intensity, 0.f, 50.f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
 
 		if (ImGui::SliderFloat("Radius", &m_Data.Radius, 1.f, 100.f, "%.1f", ImGuiSliderFlags_AlwaysClamp))
 			UpdateProj();
@@ -149,6 +150,16 @@ namespace Core {
 		v = DirectX::XMVector3Normalize(v);
 		DirectX::XMStoreFloat3(&m_Data.Direction, v);
 		UpdateView();
+	}
+
+	void SpotLight::SetAngles(float inner, float outer)
+	{
+		if (inner > outer)
+			outer = inner + 0.01f;
+		
+		m_ConeInnerAngle = inner;
+		m_ConeOuterAngle = outer;
+		UpdateProj();
 	}
 
 	void SpotLight::UpdateView()

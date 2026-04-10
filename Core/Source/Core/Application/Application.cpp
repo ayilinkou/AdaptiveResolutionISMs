@@ -88,10 +88,11 @@ namespace Core {
 			UpdateAppTime();
 
 			Core::VramInfo vramInfo = Core::Renderer::Get()->QueryVramUsage();
-			std::string fpsAsString = std::to_string(m_FPS);
+			double deltaTimeMs = GetAverageFrameTime();
+			std::string frameTimeString = std::format("{:.1f}", deltaTimeMs);
 			std::string vramUsage = std::to_string(vramInfo.CurrentUsage);
 			std::string vramBudget = std::to_string(vramInfo.Budget);
-			std::string newTitle = m_Spec.Name + " - FPS: " + fpsAsString + ", VRAM: " + vramUsage + "/" + vramBudget + "MB";
+			std::string newTitle = m_Spec.Name + " - Frame time: " + frameTimeString + "ms, VRAM: " + vramUsage + "/" + vramBudget + "MB";
 			SetWindowText(m_Window->GetHandle(), newTitle.c_str());
 
 			Timer onUpdateTimer("OnUpdate");
@@ -99,7 +100,7 @@ namespace Core {
 				layer->OnUpdate(m_DeltaTime);
 			onUpdateTimer.EndTimer();
 
-			m_Camera->CalcViewMatrix(); // I think this should be after OnUpdate. Move back if feels wrong
+			m_Camera->CalcViewMatrix();
 			LightManager::UpdateLightBufferData();
 			Renderer::Get()->UpdateGlobalConstantBuffer(m_Camera.get(), (float)m_AppTime);
 
@@ -147,5 +148,26 @@ namespace Core {
 		m_FPS = 1.0 / m_DeltaTime;
 		m_LastAppTime = now;
 		m_AppTime = std::chrono::duration_cast<std::chrono::microseconds>(now - m_AppStartTime).count() / 1000000.0;
+
+		m_LastTenFrameTimes.insert(m_LastTenFrameTimes.begin(), m_DeltaTime * 1000.0);
+		while (m_LastTenFrameTimes.size() > 10)
+		{
+			m_LastTenFrameTimes.pop_back();
+		}
+	}
+
+	double Application::GetAverageFrameTime()
+	{
+		double sum = 0.0;
+		for (double t : m_LastTenFrameTimes)
+			sum += t;
+		return sum / (double)m_LastTenFrameTimes.size();
+	}
+
+	void Application::UnregisterNeedForCursor(void* ptr)
+	{
+		m_NeedsCursorVisible.erase(ptr);
+		if (m_NeedsCursorVisible.empty())
+			InputHandler::CenterCursor();
 	}
 }

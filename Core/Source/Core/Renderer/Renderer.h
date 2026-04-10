@@ -69,13 +69,19 @@ namespace Core {
 		void BeginScene();
 		void EndScene();
 
-		void BindForModelDraws();
+		void EnableBlending();
+		void DisableBlending();
+		void EnableDepthWrite();
+		void DisableDepthWrite();
+
+		void BindForOpaqueDraws();
+		void BindForTransparentDraws();
 		void BindForDSVShadowPass();
 		void BindForPointShadowPass();
 		void SetBackFaceCulling(bool bEnabled);
 		void SetBackBufferViewport();
 
-		DirectX::XMFLOAT4 GetClearColor() const { return m_ClearColor; }
+		DirectX::XMFLOAT4& GetClearColor() { return m_ClearColor; }
 		void SetClearColor(DirectX::XMFLOAT4 clearColor) { m_ClearColor = clearColor; }
 		void ResetClearColor() { m_ClearColor = m_BaseClearColor; }
 
@@ -100,6 +106,7 @@ namespace Core {
 		ComPtr<ID3D11Texture2D> m_DepthStencilTexture;
 		ComPtr<ID3D11DepthStencilView> m_DSV;
 		ComPtr<ID3D11DepthStencilState> m_DepthStencilStateWriteEnabled;
+		ComPtr<ID3D11DepthStencilState> m_DepthStencilStateWriteDisabled;
 		ComPtr<ID3D11ShaderResourceView> m_DepthStencilSRV;
 		ComPtr<ID3D11BlendState> m_BlendStateOpaque;
 		ComPtr<ID3D11BlendState> m_BlendStateTransparent;
@@ -131,7 +138,8 @@ namespace Core {
 
 		ComPtr<ID3D11InputLayout> m_ModelInputLayout;
 
-		std::unique_ptr<ShaderProgram> m_ModelShaderProgram;
+		std::unique_ptr<ShaderProgram> m_OpaqueShaderProgram;
+		std::unique_ptr<ShaderProgram> m_TransparentShaderProgram;
 		std::unique_ptr<ShaderProgram> m_DSVShadowShaderProgram;
 		std::unique_ptr<ShaderProgram> m_PointLightShadowShaderProgram;
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <array>
 #include <memory>
 
 #include "Core/Layer/Layer.h"
@@ -22,7 +21,6 @@ public:
 	virtual void OnRender(double dt) override;
 
 	void LoadScene(const std::string& modelPath, const std::string& texturesRoot);
-	void LoadScenes(const std::vector<std::array<const std::string, 2>>& scenes);
 
 	void AddLight(std::unique_ptr<Core::Light>&& light);
 

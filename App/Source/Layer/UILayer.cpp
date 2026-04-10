@@ -14,14 +14,9 @@
 #include "Core/Utility/Utility.h"
 #include "Core/Light/LightManager.h"
 #include "Core/Light/Light.h"
+#include "Scenes.h"
 
-namespace ScenePaths {
-	std::array<std::string, 2> EmeraldSquareDay = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Day.fbx", "Models/EmeraldSquare_v4_1" };
-	std::array<std::string, 2> EmeraldSquareDusk = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Dusk.fbx", "Models/EmeraldSquare_v4_1" };
-	std::array<std::string, 2> BistroExterior = { "Models/Bistro_v5_2/BistroExterior.fbx", "Models/Bistro_v5_2" };
-	std::array<std::string, 2> BistroInterior = { "Models/Bistro_v5_2/BistroInterior.fbx", "Models/Bistro_v5_2" };
-	std::array<std::string, 2> BistroInteriorWine = { "Models/Bistro_v5_2/BistroInterior_Wine.fbx", "Models/Bistro_v5_2" };
-}
+int UILayer::s_SelectedId = -1;
 
 void UILayer::OnEvent(Core::Event& e)
 {
@@ -60,6 +55,10 @@ void UILayer::OnRender(double dt)
 		return;
 
 	RenderMenuWindow();
+
+	if (!m_bVisible)
+		return;
+
 	RenderLightingWindow();
 }
 
@@ -87,87 +86,24 @@ void UILayer::RenderMenuWindow()
 	ImGui::Begin("Menu", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
 
 	ImVec2 buttonSize(200.f, 50.f);
-	if (ImGui::Button("Load Emerald Square Day", buttonSize))
-	{
-		AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
-		if (pAppLayer)
-		{
-			pAppLayer->LoadScene(ScenePaths::EmeraldSquareDay[0], ScenePaths::EmeraldSquareDay[1]);
-
-			for (auto* pDirLight : Core::LightManager::GetDirectionalLights())
-			{
-				pDirLight->SetDirection({ -0.6f, -0.7f, -0.3f });
-			}
-		}
-		ToggleVisibility();
-	}
+	if (ImGui::Button("Load Emerald Square Night", buttonSize))
+		LoadEmeraldSquareNight();
 
 	if (ImGui::Button("Load Emerald Square Dusk", buttonSize))
-	{
-		AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
-		if (pAppLayer)
-		{
-			pAppLayer->LoadScene(ScenePaths::EmeraldSquareDusk[0], ScenePaths::EmeraldSquareDusk[1]);
-
-			auto dirLight = std::make_unique<Core::DirectionalLight>(DirectX::XMFLOAT3(1.f, 0.7f, 0.5f), DirectX::XMFLOAT3(0.9f, -0.3f, 0.2f));
-			dirLight->SetIntensity(1.5f);
-			pAppLayer->AddLight(std::move(dirLight));
-
-			Core::Renderer::Get()->SetClearColor({ 1.f, 0.7f, 0.5f, 1.f });
-		}
-		ToggleVisibility();
-	}
-
-	if (ImGui::Button("Load Bistro", buttonSize))
-	{
-		std::vector <std::array<const std::string, 2>> scenes;
-		scenes.push_back({ ScenePaths::BistroExterior[0], ScenePaths::BistroExterior[1] });
-		scenes.push_back({ ScenePaths::BistroInterior[0], ScenePaths::BistroInterior[1] });
-
-		AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
-		if (pAppLayer)
-			pAppLayer->LoadScenes(scenes);
-		ToggleVisibility();
-
-		for (auto* pDirLight : Core::LightManager::GetDirectionalLights())
-		{
-			pDirLight->SetDirection({ 0.3f, -0.9f, -0.3f });
-		}
-	}
+		LoadEmeraldSquareDusk();
 
 	if (ImGui::Button("Load Bistro Exterior", buttonSize))
-	{
-		AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
-		if (pAppLayer)
-			pAppLayer->LoadScene(ScenePaths::BistroExterior[0], ScenePaths::BistroExterior[1]);
-		ToggleVisibility();
-
-		for (auto* pDirLight : Core::LightManager::GetDirectionalLights())
-		{
-			pDirLight->SetDirection({ 0.3f, -0.9f, -0.3f });
-		}
-	}
+		LoadBistroExterior();
 
 	if (ImGui::Button("Load Bistro Interior", buttonSize))
-	{
-		AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
-		if (pAppLayer)
-			pAppLayer->LoadScene(ScenePaths::BistroInterior[0], ScenePaths::BistroInterior[1]);
-		ToggleVisibility();
-	}
+		LoadBistroInterior();
 
 	if (ImGui::Button("Load Bistro Interior Wine", buttonSize))
-	{
-		AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
-		if (pAppLayer)
-			pAppLayer->LoadScene(ScenePaths::BistroInteriorWine[0], ScenePaths::BistroInteriorWine[1]);
-		ToggleVisibility();
-	}
+		LoadBistroInteriorWine();
 
 	if (ImGui::Button("Quit", buttonSize))
-	{
 		Core::Application::Get()->Stop();
-	}
+
 	ImGui::End();
 }
 
@@ -184,17 +120,52 @@ void UILayer::RenderLightingWindow()
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.f, 0.f));
 	ImGui::Begin("Lighting", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
 
-	ImGui::SliderFloat("Ambient Strength", &Core::LightManager::GetAmbientStrengthRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-	ImGui::Separator();
+	auto camera = Core::Application::Get()->GetCamera();
+	ImGui::Text("Camera");
+	ImGui::PushID(0);
+	ImGui::DragFloat3("Position", camera->GetPositionPtr());
 
-	int i = 0;
+	DirectX::XMFLOAT3 cameraRot = camera->GetTransform().Rotation;
+	if (ImGui::DragFloat2("Rotation", reinterpret_cast<float*>(&cameraRot)))
+		camera->SetRotation(cameraRot.x, cameraRot.y);
+
+	ImGui::PopID();
+	ImGui::Separator();
+	ImGui::Dummy(ImVec2(0.f, 2.f));
+
+	std::string activeLightsStr("Active lights: ");
+	UINT activeLightCount = 0u;
 	for (Core::Light* pLight : Core::LightManager::GetLights())
 	{
+		if (pLight->IsActive())
+			activeLightCount++;
+	}
+	activeLightsStr.append(std::to_string(activeLightCount));
+	ImGui::Text(activeLightsStr.c_str());
+
+	ImGui::SliderFloat("Ambient Strength", &Core::LightManager::GetAmbientStrengthRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::ColorEdit3("Skybox Color", reinterpret_cast<float*>(&Core::Renderer::Get()->GetClearColor()));
+	ImGui::Separator();
+
+	auto& lights = Core::LightManager::GetLights();
+	ImGui::Text("Lights");
+	ImGui::BeginChild("##", ImVec2(0, 250), ImGuiChildFlags_Border, ImGuiWindowFlags_HorizontalScrollbar);
+	for (int i = 0; i < lights.size(); i++)
+	{
 		ImGui::PushID(i);
-		pLight->RenderControls();
-		ImGui::Separator();
+		if (ImGui::Selectable(lights[i]->GetName().c_str(), s_SelectedId == i))
+		{
+			s_SelectedId = i;
+		}
 		ImGui::PopID();
-		i++;
+	}
+	ImGui::EndChild();
+
+	ImGui::Dummy(ImVec2(0.f, 10.f));
+
+	if (s_SelectedId >= 0 && s_SelectedId < lights.size())
+	{
+		lights[s_SelectedId]->RenderControls();
 	}
 
 	ImGui::End();

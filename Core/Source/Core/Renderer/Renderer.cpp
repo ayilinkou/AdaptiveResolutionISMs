@@ -117,6 +117,12 @@ namespace Core {
 
 		ASSERT_NOT_FAILED(m_Device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilStateWriteEnabled));
 		NAME_D3D_RESOURCE(m_DepthStencilStateWriteEnabled, "Depth stencil state write enabled");
+
+		depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthStencilDesc.StencilWriteMask = 0;
+
+		ASSERT_NOT_FAILED(m_Device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilStateWriteDisabled));
+		NAME_D3D_RESOURCE(m_DepthStencilStateWriteDisabled, "Depth stencil state write disabled");
 		
 		m_Context->OMSetDepthStencilState(m_DepthStencilStateWriteEnabled.Get(), 1u);
 
@@ -298,26 +304,64 @@ namespace Core {
 		}
 	}
 
-	void Renderer::BindForModelDraws()
+	void Renderer::EnableBlending()
+	{
+		m_Context->OMSetBlendState(m_BlendStateTransparent.Get(), nullptr, 0xFFFFFFFF);
+	}
+
+	void Renderer::DisableBlending()
+	{
+		m_Context->OMSetBlendState(m_BlendStateOpaque.Get(), nullptr, 0xFFFFFFFF);
+	}
+
+	void Renderer::EnableDepthWrite()
+	{
+		m_Context->OMSetDepthStencilState(m_DepthStencilStateWriteEnabled.Get(), 1u);
+	}
+
+	void Renderer::DisableDepthWrite()
+	{
+		m_Context->OMSetDepthStencilState(m_DepthStencilStateWriteDisabled.Get(), 1u);
+	}
+
+	void Renderer::BindForOpaqueDraws()
 	{
 		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
-		m_Context->VSSetShader(m_ModelShaderProgram->GetVertexShader(), nullptr, 0u);
-		m_Context->PSSetShader(m_ModelShaderProgram->GetPixelShader(), nullptr, 0u);
+		m_Context->VSSetShader(m_OpaqueShaderProgram->GetVertexShader(), nullptr, 0u);
+		m_Context->PSSetShader(m_OpaqueShaderProgram->GetPixelShader(), nullptr, 0u);
+		EnableDepthWrite();
+		DisableBlending();
+	}
+
+	void Renderer::BindForTransparentDraws()
+	{
+		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
+		m_Context->VSSetShader(m_TransparentShaderProgram->GetVertexShader(), nullptr, 0u);
+		m_Context->PSSetShader(m_TransparentShaderProgram->GetPixelShader(), nullptr, 0u);
+		DisableDepthWrite();
+		EnableBlending();
 	}
 
 	void Renderer::BindForDSVShadowPass()
 	{
+		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
 		m_Context->VSSetShader(m_DSVShadowShaderProgram->GetVertexShader(), nullptr, 0u);
 		m_Context->PSSetShader(m_DSVShadowShaderProgram->GetPixelShader(), nullptr, 0u);
+		EnableDepthWrite();
+		DisableBlending();
 	}
 
 	void Renderer::BindForPointShadowPass()
 	{
+		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
 		m_Context->VSSetShader(m_PointLightShadowShaderProgram->GetVertexShader(), nullptr, 0u);
 		m_Context->PSSetShader(m_PointLightShadowShaderProgram->GetPixelShader(), nullptr, 0u);
+		EnableDepthWrite();
+		DisableBlending();
 	}
 
 	void Renderer::SetBackFaceCulling(bool bEnabled)
@@ -466,8 +510,8 @@ namespace Core {
 		
 		UINT numElements = _countof(vertexLayoutElements);
 
-		ASSERT_NOT_FAILED(m_Device->CreateInputLayout(vertexLayoutElements, numElements, m_ModelShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
-			m_ModelShaderProgram->GetVertexShaderBlob()->GetBufferSize(), &m_ModelInputLayout));
+		ASSERT_NOT_FAILED(m_Device->CreateInputLayout(vertexLayoutElements, numElements, m_OpaqueShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
+			m_OpaqueShaderProgram->GetVertexShaderBlob()->GetBufferSize(), &m_ModelInputLayout));
 		NAME_D3D_RESOURCE(m_ModelInputLayout, "Model input layout");
 	}
 
@@ -476,7 +520,11 @@ namespace Core {
 		ShaderProgramDesc desc;
 		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/BasicVS.hlsl";
 		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/BasicPS.hlsl";
-		m_ModelShaderProgram = std::make_unique<ShaderProgram>(desc);
+		m_OpaqueShaderProgram = std::make_unique<ShaderProgram>(desc);
+
+		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/BasicVS.hlsl";
+		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/TransparentPS.hlsl";
+		m_TransparentShaderProgram = std::make_unique<ShaderProgram>(desc);
 
 		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/ShadowVS.hlsl";
 		desc.Pixel.Filepath = "";
@@ -489,7 +537,8 @@ namespace Core {
 
 	void Core::Renderer::DestroyShaderPrograms()
 	{
-		m_ModelShaderProgram.reset();
+		m_OpaqueShaderProgram.reset();
+		m_TransparentShaderProgram.reset();
 		m_DSVShadowShaderProgram.reset();
 		m_PointLightShadowShaderProgram.reset();
 	}

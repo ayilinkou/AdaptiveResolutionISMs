@@ -10,14 +10,6 @@ namespace Core {
 		m_qeVector = 0.f;
 	}
 
-	void Camera::SetLookDir(float x, float y, float z)
-	{
-		m_LookDir = { x, y, z };
-		DirectX::XMVECTOR v = DirectX::XMLoadFloat3(&m_LookDir);
-		v = DirectX::XMVector3Normalize(v);
-		DirectX::XMStoreFloat3(&m_LookDir, v);
-	}
-
 	void Camera::CalcViewMatrix()
 	{
 		DirectX::XMFLOAT3 up = { 0.f, 1.f, 0.f };

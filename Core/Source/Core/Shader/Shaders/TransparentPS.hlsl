@@ -30,7 +30,7 @@ struct PS_In
 };
 
 float4 main(PS_In p) : SV_TARGET
-{		
+{
 	float4 color;
 	if (mat.bHasAlbedoTexture)
 	{
@@ -66,10 +66,11 @@ float4 main(PS_In p) : SV_TARGET
 	float3 pixelToCam = normalize(globalCBuffer.Camera.Pos - p.worldPos);
 		
 	float3 totalLight = float3(0.f, 0.f, 0.f);
-	totalLight += CalcSpotLights(color.rgb, p.worldPos, normalWS, pixelToCam, specular);
-	totalLight += CalcPointLights(color.rgb, p.worldPos, normalWS, pixelToCam, specular);
-	totalLight += CalcDirectionalLights(color.rgb, p.worldPos, normalWS, pixelToCam, specular);
+	/*float3 noColor = float3(0.f, 0.f, 0.f);
+	totalLight += CalcSpotLights(noColor, p.worldPos, normalWS, pixelToCam, specular);
+	totalLight += CalcPointLights(noColor, p.worldPos, normalWS, pixelToCam, specular);
+	totalLight += CalcDirectionalLights(noColor, p.worldPos, normalWS, pixelToCam, specular);*/
 	
 	float3 ambient = color.rgb * globalCBuffer.Lights.AmbientStrength;
-	return float4(totalLight + ambient + emissive, 1.f);
+	return float4(totalLight + ambient + emissive, mat.Opacity);
 }

@@ -3,7 +3,7 @@
 #include "Core/Utility/MyMacros.h"
 
 namespace Core {
-	std::unordered_set<Light*> LightManager::s_Lights;
+	std::vector<Light*> LightManager::s_Lights;
 	std::vector<PointLight*> LightManager::s_PointLights;
 	std::vector<SpotLight*> LightManager::s_SpotLights;
 	std::vector<DirectionalLight*> LightManager::s_DirLights;
@@ -29,7 +29,7 @@ namespace Core {
 
 	void LightManager::RegisterLight(Light* pLight)
 	{
-		s_Lights.insert(pLight);
+		s_Lights.push_back(pLight);
 
 		PointLight* pPointLight = dynamic_cast<PointLight*>(pLight);
 		if (pPointLight)
@@ -58,7 +58,11 @@ namespace Core {
 
 	void LightManager::UnregisterLight(Light* pLight)
 	{
-		s_Lights.erase(pLight);
+		auto it = std::find(s_Lights.begin(), s_Lights.end(), pLight);
+		if (it != s_Lights.end())
+		{
+			s_Lights.erase(it);
+		}
 
 		PointLight* pPointLight = dynamic_cast<PointLight*>(pLight);
 		if (pPointLight)

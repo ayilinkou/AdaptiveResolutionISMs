@@ -80,6 +80,7 @@ set(SHADER_FILES
     Source/Core/Shader/Shaders/GlobalCBuffer.hlsl
     Source/Core/Shader/Shaders/Common.hlsl
     Source/Core/Shader/Shaders/BasicPS.hlsl
+    Source/Core/Shader/Shaders/TransparentPS.hlsl
     Source/Core/Shader/Shaders/BasicVS.hlsl
     Source/Core/Shader/Shaders/ShadowVS.hlsl
     Source/Core/Shader/Shaders/PointLightShadowPS.hlsl

@@ -19,7 +19,7 @@ namespace Core {
 		static void Shutdown();
 		
 		static void HandleInputs(bool bCenterCursor);
-		static InputHandler* Get() { return s_pInstance; }
+		static void CenterCursor();
 
 		static LRESULT MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
 

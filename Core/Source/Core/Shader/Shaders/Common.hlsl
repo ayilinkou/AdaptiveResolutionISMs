@@ -3,9 +3,9 @@
 SamplerState linearSampler : register(s0);
 SamplerComparisonState shadowSampler : register(s1);
 
-Texture2DArray dirShadowMaps : register(t2);
-Texture2DArray spotShadowMaps : register(t3);
-TextureCubeArray pointShadowMaps : register(t4);
+Texture2DArray dirShadowMaps : register(t3);
+Texture2DArray spotShadowMaps : register(t4);
+TextureCubeArray pointShadowMaps : register(t5);
 
 float CalcBias(float minBias, float slopeBias, float3 worldNormal, float3 pixelToLight)
 {
@@ -120,7 +120,7 @@ float3 _CalcDirectionalLight(uint lightIndex, float3 pixelColor, float3 worldPos
 	shadowUV.x = lightNDC.x * 0.5f + 0.5f;
 	shadowUV.y = -lightNDC.y * 0.5f + 0.5f;
 	
-	float bias = CalcBias(0.000005f, 0.0005f, worldNormal, -dirLight.Dir);
+	float bias = CalcBias(0.0005f, 0.0001f, worldNormal, -dirLight.Dir);
 	float shadow = dirShadowMaps.SampleCmpLevelZero(shadowSampler, float3(shadowUV, lightIndex), currentDepth - bias);
 
 	float geometryTerm = pow(dot(-dirLight.Dir, worldNormal) * 0.5f + 0.5f, 2.f); // Valve's half lambert

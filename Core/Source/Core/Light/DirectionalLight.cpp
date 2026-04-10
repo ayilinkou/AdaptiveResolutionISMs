@@ -6,7 +6,7 @@
 #include "Core/Utility/MyMacros.h"
 
 namespace Core {
-	constexpr UINT SHADOW_MAP_RES = 8192u;
+	constexpr UINT SHADOW_MAP_RES = 1024u;
 	D3D11_VIEWPORT DirectionalLight::s_ShadowMapViewport = { 0.f, 0.f, (float)SHADOW_MAP_RES, (float)SHADOW_MAP_RES, 0.f, 1.f };
 	DirectX::XMMATRIX DirectionalLight::s_Proj = DirectX::XMMatrixOrthographicLH(300.f, 300.f, 0.1f, 1000.f);
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> DirectionalLight::s_ShadowMapsSRV;
@@ -15,6 +15,7 @@ namespace Core {
 	DirectionalLight::DirectionalLight(const DirectX::XMFLOAT3 color, const DirectX::XMFLOAT3 dir)
 	{
 		m_Data.Color = color;
+		m_Name = "Directional Light";
 		LightManager::RegisterLight(this);
 		SetDirection(dir);
 	}

@@ -9,6 +9,8 @@ set(SOURCES
     Source/Layer/AppLayer.cpp
     Source/Layer/UILayer.h
     Source/Layer/UILayer.cpp
+
+    Source/Scenes.h
 )
 
 set(SHADER_FILES

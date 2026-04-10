@@ -55,12 +55,13 @@ namespace Core {
 		double GetDeltaTime() const { return m_DeltaTime; }
 
 		void RegisterNeedForCursor(void* ptr) { m_NeedsCursorVisible.insert(ptr); }
-		void UnregisterNeedForCursor(void* ptr) { m_NeedsCursorVisible.erase(ptr); }
+		void UnregisterNeedForCursor(void* ptr);
 
 	private:
 		void RaiseEvent(Event& e);
 
 		void UpdateAppTime();
+		double GetAverageFrameTime();
 
 	private:
 		ApplicationSpec m_Spec;
@@ -76,6 +77,8 @@ namespace Core {
 		double m_DeltaTime;
 		double m_FPS;
 		bool m_Running = false;
+		double m_DeltaTimeOverTenFrames;
+		std::vector<double> m_LastTenFrameTimes;
 
 		/*
 		Set of pointers to objects which need the cursor to be visible.

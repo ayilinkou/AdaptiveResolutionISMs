@@ -41,7 +41,6 @@ namespace Core {
 	{
 		Renderer* pRenderer = Core::Renderer::Get();
 		ID3D11DeviceContext* pContext = pRenderer->GetContext().Get();
-		pRenderer->BindForModelDraws();
 		pContext->OMSetRenderTargets(1u, pRenderer->GetBackBufferRTV().GetAddressOf(), pRenderer->GetDSV().Get());
 		pRenderer->SetBackBufferViewport();
 		RenderPass(RenderPassType::Main);
@@ -63,7 +62,7 @@ namespace Core {
 			pRenderer->BindForDSVShadowPass();
 			pContext->RSSetViewports(1u, &DirectionalLight::GetShadowMapViewport());
 			const auto& dirDSVs = DirectionalLight::GetDSVs();
-
+			UINT activeDirLightCount = 0u;
 			UINT dirLightCount = min((UINT)dirLights.size(), MAX_DIRECTIONAL_LIGHT_COUNT);
 			for (UINT i = 0u; i < dirLightCount; i++)
 			{
@@ -71,12 +70,13 @@ namespace Core {
 				if (!dirLight->IsActive())
 					continue;
 				
-				LightManager::UpdateLightCBuffer(dirLight->GetData().ViewProj, i);
+				LightManager::UpdateLightCBuffer(dirLight->GetData().ViewProj, activeDirLightCount);
 			
-				pContext->ClearDepthStencilView(dirDSVs[i].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
-				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[i].Get());
+				pContext->ClearDepthStencilView(dirDSVs[activeDirLightCount].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
+				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[activeDirLightCount].Get());
 
 				RenderPass(RenderPassType::Shadow);
+				activeDirLightCount++;
 			}
 		}
 
@@ -86,7 +86,7 @@ namespace Core {
 			pRenderer->BindForDSVShadowPass();
 			pContext->RSSetViewports(1u, &SpotLight::GetShadowMapViewport());
 			const auto& dirDSVs = SpotLight::GetDSVs();
-
+			UINT activeSpotLightCount = 0u;
 			UINT spotLightCount = min((UINT)spotLights.size(), MAX_SPOT_LIGHT_COUNT);
 			for (UINT i = 0u; i < spotLightCount; i++)
 			{
@@ -94,12 +94,13 @@ namespace Core {
 				if (!spotLight->IsActive())
 					continue;
 
-				LightManager::UpdateLightCBuffer(spotLight->GetData().ViewProj, i);
+				LightManager::UpdateLightCBuffer(spotLight->GetData().ViewProj, activeSpotLightCount);
 
-				pContext->ClearDepthStencilView(dirDSVs[i].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
-				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[i].Get());
+				pContext->ClearDepthStencilView(dirDSVs[activeSpotLightCount].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
+				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[activeSpotLightCount].Get());
 
 				RenderPass(RenderPassType::Shadow);
+				activeSpotLightCount++;
 			}
 		}
 
@@ -157,11 +158,15 @@ namespace Core {
 		{
 			ID3D11ShaderResourceView* shadowMapSRVs[3] = { DirectionalLight::GetShadowMapsSRV().Get(), SpotLight::GetShadowMapsSRV().Get(),
 				PointLight::GetShadowMapsSRV().Get() };
-			pContext->PSSetShaderResources(2u, _countof(shadowMapSRVs), shadowMapSRVs);
+			pContext->PSSetShaderResources(3u, _countof(shadowMapSRVs), shadowMapSRVs);
 		}
 
+		// opaque
 		for (const auto& [pModelData, modelWorldTransformsT] : m_ModelWorldTransformsMapT)
 		{
+			if (passType == RenderPassType::Main)
+				pRenderer->BindForOpaqueDraws();
+
 			pModelData->BindModelBuffers();
 
 			UINT modelWorldCount = (UINT)modelWorldTransformsT.size();
@@ -171,17 +176,53 @@ namespace Core {
 			for (const Mesh& mesh : pModelData->GetMeshes())
 			{
 				Material* pMat = mesh.GetMaterial();
-
-				if (passType == RenderPassType::Shadow && !pMat->IsOpaque())
+				if (!pMat->IsOpaque())
 					continue;
 
 				if (passType == RenderPassType::Main)
 				{
 					// bind material resources and buffers
-					ID3D11ShaderResourceView* SRVs[2] = { pMat->GetAlbedoSRV(), pMat->GetSpecularSRV() };
+					ID3D11ShaderResourceView* SRVs[3] = { pMat->GetAlbedoSRV(), pMat->GetSpecularSRV(), pMat->GetEmissiveSRV()};
 					pContext->PSSetShaderResources(0u, _countof(SRVs), SRVs);
 					pContext->PSSetConstantBuffers(1u, 1u, pMat->GetCBuffer().GetAddressOf());
 				}
+
+				pRenderer->SetBackFaceCulling(!pMat->IsTwoSided());
+
+				const std::vector<DirectX::XMMATRIX>& meshLocalTransformsT = pModelData->GetMeshLocalTransformsT(const_cast<Mesh*>(&mesh));
+				UINT meshLocalCount = (UINT)meshLocalTransformsT.size();
+				assert(meshLocalCount <= MAX_MODEL_LOCAL_COUNT);
+
+				UpdateLocalCBuffer(meshLocalTransformsT);
+
+				UINT instanceCount = meshLocalCount * modelWorldCount;
+				pContext->DrawIndexedInstanced(mesh.GetIndexCount(), instanceCount, mesh.GetIndexOffset(), 0, 0u);
+			}
+		}
+
+		if (passType == RenderPassType::Shadow)
+			return;
+
+		// transparent
+		for (const auto& [pModelData, modelWorldTransformsT] : m_ModelWorldTransformsMapT)
+		{
+			pRenderer->BindForTransparentDraws();
+			pModelData->BindModelBuffers();
+
+			UINT modelWorldCount = (UINT)modelWorldTransformsT.size();
+			assert(modelWorldCount <= MAX_MODEL_WORLD_COUNT);
+			UpdateWorldCBuffer(modelWorldTransformsT);
+
+			for (const Mesh& mesh : pModelData->GetMeshes())
+			{
+				Material* pMat = mesh.GetMaterial();
+				if (pMat->IsOpaque())
+					continue;
+
+				// bind material resources and buffers
+				ID3D11ShaderResourceView* SRVs[3] = { pMat->GetAlbedoSRV(), pMat->GetSpecularSRV(), pMat->GetEmissiveSRV() };
+				pContext->PSSetShaderResources(0u, _countof(SRVs), SRVs);
+				pContext->PSSetConstantBuffers(1u, 1u, pMat->GetCBuffer().GetAddressOf());
 
 				pRenderer->SetBackFaceCulling(!pMat->IsTwoSided());
 

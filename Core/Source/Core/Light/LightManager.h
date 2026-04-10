@@ -1,6 +1,5 @@
 #pragma once
 
-#include <unordered_set>
 #include <vector>
 
 #include "DirectXMath.h"
@@ -44,7 +43,7 @@ namespace Core {
 		static void RegisterLight(Light* pLight);
 		static void UnregisterLight(Light* pLight);
 
-		static std::unordered_set<Light*>& GetLights() { return s_Lights; }
+		static std::vector<Light*>& GetLights() { return s_Lights; }
 		static std::vector<PointLight*>& GetPointLights() { return s_PointLights; }
 		static std::vector<SpotLight*>& GetSpotLights() { return s_SpotLights; }
 		static std::vector<DirectionalLight*>& GetDirectionalLights() { return s_DirLights; }
@@ -59,7 +58,7 @@ namespace Core {
 		static void CreateBuffer();
 
 	private:
-		static std::unordered_set<Light*> s_Lights;
+		static std::vector<Light*> s_Lights;
 		static std::vector<PointLight*> s_PointLights;
 		static std::vector<SpotLight*> s_SpotLights;
 		static std::vector<DirectionalLight*> s_DirLights;

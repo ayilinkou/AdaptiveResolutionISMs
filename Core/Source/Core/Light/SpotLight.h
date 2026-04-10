@@ -14,8 +14,8 @@ namespace Core {
 		DirectX::XMFLOAT3 Attenuation = { 1.f, 0.f, 0.f }; // x = quadratic, y = linear, z = constant
 		float Radius = 50.f;
 		DirectX::XMFLOAT3 Direction = { 0.f, -1.f, 0.f };
-		float CosInnerAngle = 45.f;
-		float CosOuterAngle = 60.f;
+		float CosInnerAngle;
+		float CosOuterAngle;
 		DirectX::XMFLOAT3 Padding;
 		DirectX::XMMATRIX ViewProj;
 	};
@@ -30,6 +30,8 @@ namespace Core {
 
 		void SetPosition(float x, float y, float z);
 		void SetDirection(float x, float y, float z);
+		void SetAngles(float inner, float outer);
+		void SetAttenuation(float quadratic, float linear, float constant) { m_Data.Attenuation = { quadratic, linear, constant }; }
 		void SetAccumTransform(const DirectX::XMMATRIX& transform) { m_AccumTransform = transform; }
 		virtual void SetColor(float r, float g, float b) override { m_Data.Color = { r, g, b }; }
 		virtual void SetSpecularPower(float power) override { m_Data.SpecularPower = power; }
@@ -56,8 +58,8 @@ namespace Core {
 		DirectX::XMMATRIX m_AccumTransform = DirectX::XMMatrixIdentity();
 		DirectX::XMMATRIX m_View;
 		DirectX::XMMATRIX m_Proj;
-		float m_ConeInnerAngle = 45.f;
-		float m_ConeOuterAngle = 60.f;
+		float m_ConeInnerAngle = 60.f;
+		float m_ConeOuterAngle = 89.f;
 
 		static D3D11_VIEWPORT s_ShadowMapViewport;
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_ShadowMapsSRV;

@@ -11,12 +11,14 @@ namespace Core {
 		Camera() = delete;
 		Camera(const DirectX::XMMATRIX& proj, float nearZ, float farZ);
 
-		void SetLookDir(float, float, float);
+		void SetPosition(float x, float y, float z) { m_Transform.Position = { x, y, z }; }
+		void SetRotation(float pitch, float yaw) { m_Transform.SetRotation(pitch, yaw); }
 
 		void CalcViewMatrix();
 
 		DirectX::XMFLOAT3 GetLookDir() const { return m_LookDir; }
 		DirectX::XMFLOAT3 GetPosition() const { return m_Transform.Position; }
+		float* GetPositionPtr() { return reinterpret_cast<float*>(&m_Transform.Position); }
 
 		DirectX::XMMATRIX GetViewMatrix() const { return m_ViewMatrix; }
 		DirectX::XMMATRIX GetProjMatrix() const { return m_ProjMatrix; }
@@ -31,7 +33,6 @@ namespace Core {
 		void MoveCamera(float dt);
 
 	private:
-		Transform m_Transform;
 		DirectX::XMFLOAT3 m_LookDir;
 		DirectX::XMMATRIX m_ViewMatrix;
 		const DirectX::XMMATRIX m_ProjMatrix;

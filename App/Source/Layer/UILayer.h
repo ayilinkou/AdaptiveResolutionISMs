@@ -25,4 +25,13 @@ private:
 	void RenderLightingWindow();
 
 	void ToggleVisibility();
+
+	void LoadEmeraldSquareNight();
+	void LoadEmeraldSquareDusk();
+	void LoadBistroExterior();
+	void LoadBistroInterior();
+	void LoadBistroInteriorWine();
+
+private:
+	static int s_SelectedId;
 };

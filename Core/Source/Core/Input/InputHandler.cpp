@@ -24,7 +24,7 @@ namespace Core {
 		GetClientRect(hwnd, &rect);
 		s_Center = { (rect.right - rect.left) / 2, (rect.bottom - rect.top) / 2 };
 		ClientToScreen(hwnd, &s_Center);
-		SetCursorPos(s_Center.x, s_Center.y);
+		CenterCursor();
 
 		return s_pInstance;
 	}
@@ -52,7 +52,12 @@ namespace Core {
 		}
 
 		if (GetForegroundWindow() == s_hwnd && bCenterCursor)
-			SetCursorPos(s_Center.x, s_Center.y);
+			CenterCursor();
+	}
+
+	void InputHandler::CenterCursor()
+	{
+		SetCursorPos(s_Center.x, s_Center.y);
 	}
 
 	void InputHandler::ProcessMouseMovement()

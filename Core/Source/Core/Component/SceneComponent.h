@@ -6,7 +6,7 @@ namespace Core {
 	class SceneComponent
 	{
 	public:
-		const Transform& GetTransform() const { return m_Transform; }
+		Transform& GetTransform() { return m_Transform; }
 
 	protected:
 		Transform m_Transform;
