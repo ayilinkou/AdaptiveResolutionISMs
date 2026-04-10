@@ -8,6 +8,8 @@
 
 #include "Core/Window/Window.h"
 #include "Core/Shader/ShaderProgram.h"
+#include "Core/Light/LightManager.h"
+#include "Core/Utility/Constants.h"
 
 namespace Core {
 
@@ -26,6 +28,7 @@ namespace Core {
 	struct GlobalCBuffer
 	{
 		CameraBuffer CameraData;
+		LightBuffer LightData;
 		UINT ScreenWidth;
 		UINT ScreenHeight;
 		float NearZ;
@@ -58,14 +61,23 @@ namespace Core {
 
 		void Init();
 		void Shutdown();
-		void CreateModelInputLayoutAndShaderProgram();
-		void ReleaseModelShaderProgram();
 
-		void BeginScene(float red, float green, float blue, float alpha);
+		void CreateInputLayouts();
+		void CreateShaderPrograms();
+		void DestroyShaderPrograms();
+
+		void BeginScene();
 		void EndScene();
 
 		void BindForModelDraws();
+		void BindForDSVShadowPass();
+		void BindForPointShadowPass();
 		void SetBackFaceCulling(bool bEnabled);
+		void SetBackBufferViewport();
+
+		DirectX::XMFLOAT4 GetClearColor() const { return m_ClearColor; }
+		void SetClearColor(DirectX::XMFLOAT4 clearColor) { m_ClearColor = clearColor; }
+		void ResetClearColor() { m_ClearColor = m_BaseClearColor; }
 
 		// this shows VRAM usage for the adapter across all processes, not just this application
 		VramInfo QueryVramUsage() const;
@@ -94,6 +106,7 @@ namespace Core {
 		ComPtr<ID3D11RasterizerState> m_RasterStateBackFaceCullOn;
 		ComPtr<ID3D11RasterizerState> m_RasterStateBackFaceCullOff;
 		ComPtr<ID3D11SamplerState> m_SamplerLinear;
+		ComPtr<ID3D11SamplerState> m_ShadowMapSampler;
 		ComPtr<ID3D11Query> m_PipelineStatsQuery;
 		ComPtr<ID3D11Buffer> m_GlobalCBuffer;
 
@@ -104,7 +117,6 @@ namespace Core {
 		void UpdateGlobalConstantBuffer(Camera* ActiveCamera, float appTime);
 
 	public:
-
 		ComPtr<ID3D11Device> GetDevice() const { return m_Device; }
 		ComPtr<ID3D11DeviceContext> GetContext() const { return m_Context; }
 
@@ -120,6 +132,11 @@ namespace Core {
 		ComPtr<ID3D11InputLayout> m_ModelInputLayout;
 
 		std::unique_ptr<ShaderProgram> m_ModelShaderProgram;
+		std::unique_ptr<ShaderProgram> m_DSVShadowShaderProgram;
+		std::unique_ptr<ShaderProgram> m_PointLightShadowShaderProgram;
+
+		DirectX::XMFLOAT4 m_BaseClearColor;
+		DirectX::XMFLOAT4 m_ClearColor;
 
 		friend class Application;
 	};

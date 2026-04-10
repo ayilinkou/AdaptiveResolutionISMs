@@ -18,6 +18,7 @@
 #include "Core/Renderer/TextureData.h"
 #include "Core/Utility/MyMacros.h"
 #include "Core/Utility/Utility.h"
+#include "Core/Light/PointLight.h"
 
 namespace Core::Loaders {
 	class TextureLoader
@@ -216,18 +217,24 @@ namespace Core::Loaders {
 			if (!scene)
 				return nullptr;
 
+			std::printf("Assimp finished reading model.\n");
+
 			std::vector<Material> materials = LoadMaterials(scene, texturesRoot);
 			
 			Node* rootNode = new Node(nullptr, nullptr); // TODO: convert to unique_ptr and move into pModelData
 			ModelData* pModelData = new ModelData(modelPath, texturesRoot, scene->mName.C_Str(), std::move(materials), rootNode, scene->mNumMeshes);
 			rootNode->SetModelData(pModelData);
+
+			std::printf("Processing model nodes...\n");
 			rootNode->ProcessNode(scene->mRootNode, scene, DirectX::XMMatrixIdentity());
 			pModelData->Init();
+
 			return pModelData;
 		}
 
 		static std::vector<Material> LoadMaterials(const aiScene* scene, const std::string& texturesRoot)
 		{
+			std::printf("Loading materials...\n");
 			std::vector<Material> materials;
 			materials.reserve(scene->mNumMaterials);
 			for (size_t i = 0; i < scene->mNumMaterials; i++)

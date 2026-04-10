@@ -1,6 +1,7 @@
 #include "AppLayer.h"
 #include "Core/Application/Application.h"
 #include "Core/Renderer/Renderer.h"
+#include "Core/Utility/Timer.h"
 
 AppLayer::AppLayer(const std::string& layerName)
 	: Core::Layer(layerName)
@@ -14,7 +15,7 @@ AppLayer::~AppLayer()
 }
 
 void AppLayer::Init()
-{
+{	
 	m_RenderQueue = std::make_unique<Core::RenderQueue>();
 }
 
@@ -38,18 +39,38 @@ void AppLayer::OnUpdate(double dt)
 
 void AppLayer::OnRender(double dt)
 {
-	Core::Renderer* renderer = Core::Renderer::Get();
-	ID3D11DeviceContext* context = renderer->GetContext().Get();
+	{
+		Timer timer("RenderShadowPass()");
+		m_RenderQueue->RenderShadowPass();
+	}
 
-	context->OMSetRenderTargets(1u, renderer->GetBackBufferRTV().GetAddressOf(), renderer->GetDSV().Get());
-
-	m_RenderQueue->Render();
+	{
+		Timer timer("RenderMainPass()");
+		m_RenderQueue->RenderMainPass();
+	}
 }
 
 void AppLayer::LoadScene(const std::string& modelPath, const std::string& texturesRoot)
 {
+	Core::Renderer::Get()->ResetClearColor();
 	m_Models.clear();
+	m_Lights.clear();
 	m_Models.emplace_back(std::make_unique<Core::Model>(modelPath, texturesRoot));
+}
+
+void AppLayer::LoadScenes(const std::vector<std::array<const std::string, 2>>& scenes)
+{
+	m_Models.clear();
+	m_Lights.clear();
+	for (const auto& scene : scenes)
+	{
+		m_Models.emplace_back(std::make_unique<Core::Model>(scene[0], scene[1]));
+	}
+}
+
+void AppLayer::AddLight(std::unique_ptr<Core::Light>&& light)
+{
+	m_Lights.push_back(std::move(light));
 }
 
 bool AppLayer::OnKeyPressed(Core::KeyPressedEvent& e)

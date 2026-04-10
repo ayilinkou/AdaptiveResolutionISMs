@@ -12,10 +12,6 @@ set(SOURCES
 )
 
 set(SHADER_FILES
-    Source/Shaders/GlobalCBuffer.hlsl
-    Source/Shaders/Common.hlsl
-    Source/Shaders/BasicPS.hlsl
-    Source/Shaders/BasicVS.hlsl
 )
 
 set_property(SOURCE ${SHADER_FILES} PROPERTY VS_SETTINGS "ExcludedFromBuild=true")

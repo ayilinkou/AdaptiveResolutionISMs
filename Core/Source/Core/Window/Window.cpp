@@ -40,16 +40,16 @@ namespace Core {
 		// register the window class
 		RegisterClassEx(&wc);
 
-		unsigned long ScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-		unsigned long ScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+		unsigned long screenWidth = GetSystemMetrics(SM_CXSCREEN);
+		unsigned long screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 		// setup the screen settings depending on whether it is running in full screen or in windowed mode
 		if (m_Spec.bFullscreen)
 		{
 			memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
 			dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-			dmScreenSettings.dmPelsWidth = ScreenWidth;
-			dmScreenSettings.dmPelsHeight = ScreenHeight;
+			dmScreenSettings.dmPelsWidth = screenWidth;
+			dmScreenSettings.dmPelsHeight = screenHeight;
 			dmScreenSettings.dmBitsPerPel = 32;
 			dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 
@@ -59,22 +59,30 @@ namespace Core {
 		}
 		else
 		{
-			ScreenWidth = m_Spec.Width;
-			ScreenHeight = m_Spec.Height;
+			screenWidth = m_Spec.Width;
+			screenHeight = m_Spec.Height;
 
-			posX = (GetSystemMetrics(SM_CXSCREEN) - ScreenWidth) / 2;
-			posY = (GetSystemMetrics(SM_CYSCREEN) - ScreenHeight) / 2;
+			posX = (GetSystemMetrics(SM_CXSCREEN) - screenWidth) / 2;
+			posY = (GetSystemMetrics(SM_CYSCREEN) - screenHeight) / 2;
 		}
 
 		// only include top bar if not in fullscreen
-		DWORD windowTopBar = m_Spec.bFullscreen ? WS_POPUP : (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX);
+		DWORD windowStyle = m_Spec.bFullscreen ? WS_POPUP : (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX);
+
+		// get window dimensions from client size + styling
+		RECT desiredRect = { 0, 0, (LONG)screenWidth, (LONG)screenHeight };
+		AdjustWindowRectEx(&desiredRect, windowStyle, FALSE, WS_EX_APPWINDOW);
+
+		int windowWidth = desiredRect.right - desiredRect.left;
+		int windowHeight = desiredRect.bottom - desiredRect.top;
+
 		m_hwnd = CreateWindowEx(
 			WS_EX_APPWINDOW,
 			m_Spec.Title.c_str(),
 			m_Spec.Title.c_str(),
-			WS_CLIPSIBLINGS | WS_CLIPCHILDREN | windowTopBar,
+			WS_CLIPSIBLINGS | WS_CLIPCHILDREN | windowStyle,
 			posX, posY,
-			ScreenWidth, ScreenHeight,
+			windowWidth, windowHeight,
 			NULL,
 			NULL,
 			m_hInstance,

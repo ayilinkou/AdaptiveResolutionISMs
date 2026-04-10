@@ -23,15 +23,24 @@ namespace Core
 			DirectX::XMMATRIX modelLocalTransforms[MAX_MODEL_LOCAL_COUNT];
 		};
 
+		enum RenderPassType
+		{
+			Main,
+			Shadow
+		};
+
 	public:
 		RenderQueue();
 
 		void PopulateRenderQueue();
-		void Render();
+		void RenderMainPass();
+		void RenderShadowPass();
 
 	private:
 		void Init();
 		void CreateBuffers();
+
+		void RenderPass(RenderPassType passType);
 
 		void UpdateLocalCBuffer(const std::vector<DirectX::XMMATRIX>& modelLocalTransformsT);
 		void UpdateWorldCBuffer(const std::vector<DirectX::XMMATRIX>& modelWorldTransformsT);

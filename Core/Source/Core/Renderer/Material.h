@@ -41,6 +41,7 @@ namespace Core {
 		ID3D11ShaderResourceView* GetSpecularSRV() const { if (m_SpecularTex) return m_SpecularTex->GetSRV(); return nullptr; }
 
 		bool IsTwoSided() const { return m_bTwoSided; }
+		bool IsOpaque() const { return m_Opacity == 1.f; }
 
 	private:
 		void CreateCBuffer();

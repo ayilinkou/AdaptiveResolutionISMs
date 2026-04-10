@@ -18,6 +18,17 @@ set(SOURCES
 	Source/Core/Input/InputHandler.h
 	Source/Core/Input/InputHandler.cpp
 
+	Source/Core/Light/LightManager.h
+	Source/Core/Light/LightManager.cpp
+	Source/Core/Light/Light.h
+	Source/Core/Light/Light.cpp
+	Source/Core/Light/PointLight.h
+	Source/Core/Light/PointLight.cpp
+	Source/Core/Light/SpotLight.h
+	Source/Core/Light/SpotLight.cpp
+	Source/Core/Light/DirectionalLight.h
+	Source/Core/Light/DirectionalLight.cpp
+
 	Source/Core/Layer/Layer.h
 
 	Source/Core/Model/Mesh.h
@@ -59,10 +70,22 @@ set(SOURCES
 	Source/Core/Utility/Logger.cpp
 	Source/Core/Utility/Utility.h
 	Source/Core/Utility/Constants.h
+	Source/Core/Utility/Timer.h
 
 	Source/Core/Window/Window.h
 	Source/Core/Window/Window.cpp
 )
+
+set(SHADER_FILES
+    Source/Core/Shader/Shaders/GlobalCBuffer.hlsl
+    Source/Core/Shader/Shaders/Common.hlsl
+    Source/Core/Shader/Shaders/BasicPS.hlsl
+    Source/Core/Shader/Shaders/BasicVS.hlsl
+    Source/Core/Shader/Shaders/ShadowVS.hlsl
+    Source/Core/Shader/Shaders/PointLightShadowPS.hlsl
+)
+
+set_property(SOURCE ${SHADER_FILES} PROPERTY VS_SETTINGS "ExcludedFromBuild=true")
 
 add_library(Core STATIC)
 
@@ -71,10 +94,14 @@ find_package(directxtex CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 
-target_sources(Core PRIVATE ${SOURCES})
+target_sources(Core PRIVATE
+    ${SOURCES}
+    ${SHADER_FILES}
+)
 
 # Match VS filters to directory structure on disk
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SOURCES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SHADER_FILES})
 
 target_include_directories(Core PUBLIC "Source")
 

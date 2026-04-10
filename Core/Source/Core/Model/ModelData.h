@@ -8,6 +8,7 @@
 
 #include "d3d11.h"
 #include "wrl.h"
+#include "assimp/light.h"
 
 #include "Core/Renderer/Material.h"
 #include "Core/Renderer/Texture.h"
@@ -47,6 +48,7 @@ namespace Core {
 
 	private:
 		Mesh* RegisterMesh(aiMesh* mesh, UINT meshIndex, const DirectX::XMMATRIX& localTransform);
+		void RegisterLight(aiLight* pLight, const DirectX::XMMATRIX& accumTransform);
 		void CreateBuffers();
 
 		void ReleaseIndexAndVertexArrays();
@@ -57,6 +59,7 @@ namespace Core {
 
 		std::vector<Material> m_Materials;
 		std::vector<Mesh> m_Meshes;
+		std::vector<std::pair<aiLight, DirectX::XMMATRIX>> m_Lights;
 		std::unordered_map<Mesh*, std::vector<DirectX::XMMATRIX>> m_MeshLocalTransformsT;
 
 		const std::unique_ptr<Node> m_RootNode; // TODO: I think this isn't needed after the mesh is processed, as long as these are static meshes

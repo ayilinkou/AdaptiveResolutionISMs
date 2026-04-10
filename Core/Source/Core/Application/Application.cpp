@@ -7,6 +7,8 @@
 #include "Application.h"
 #include "Core/Input/InputHandler.h"
 #include "Core/Utility/Logger.h"
+#include "Core/Utility/Timer.h"
+#include "Core/Light/LightManager.h"
 
 namespace Core {
 	Application* Application::s_pApp = nullptr;
@@ -39,8 +41,11 @@ namespace Core {
 		m_Renderer = std::make_shared<Renderer>(m_Spec.RenderSpec);
 		m_Renderer->Init();
 
+		LightManager::Init();
+
 		m_ResourceManager = std::make_shared<ResourceManager>(m_Window->GetHandle(), m_Renderer->GetDevice(), m_Renderer->GetContext());
-		m_Renderer->CreateModelInputLayoutAndShaderProgram();
+		m_Renderer->CreateShaderPrograms();
+		m_Renderer->CreateInputLayouts();
 
 		float fieldOfView = 3.141592654f / 4.f;
 		float aspectRatio = (float)m_Spec.WinSpec.Width / (float)m_Spec.WinSpec.Height;
@@ -52,9 +57,9 @@ namespace Core {
 	{
 		m_Layers.clear();
 		
-		m_Renderer->ReleaseModelShaderProgram();
-
+		m_Renderer->DestroyShaderPrograms();
 		m_ResourceManager.reset();
+		LightManager::Shutdown();
 		m_Renderer.reset();
 		InputHandler::Shutdown();
 		m_Window.reset();
@@ -89,20 +94,25 @@ namespace Core {
 			std::string newTitle = m_Spec.Name + " - FPS: " + fpsAsString + ", VRAM: " + vramUsage + "/" + vramBudget + "MB";
 			SetWindowText(m_Window->GetHandle(), newTitle.c_str());
 
-			m_Camera->CalcViewMatrix();
-			Renderer::Get()->UpdateGlobalConstantBuffer(m_Camera.get(), (float)m_AppTime);
-
+			Timer onUpdateTimer("OnUpdate");
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnUpdate(m_DeltaTime);
+			onUpdateTimer.EndTimer();
 
-			Renderer::Get()->BeginScene(0.3f, 0.6f, 0.8f, 1.f);
+			m_Camera->CalcViewMatrix(); // I think this should be after OnUpdate. Move back if feels wrong
+			LightManager::UpdateLightBufferData();
+			Renderer::Get()->UpdateGlobalConstantBuffer(m_Camera.get(), (float)m_AppTime);
+
+			Renderer::Get()->BeginScene();
 
 			ImGui_ImplDX11_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 
+			Timer onRenderTimer("OnRender");
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnRender(m_DeltaTime);
+			onRenderTimer.EndTimer();
 
 			ImGui::EndFrame();
 			ImGui::Render();

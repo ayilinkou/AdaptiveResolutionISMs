@@ -56,7 +56,7 @@ namespace Core {
 		}
 
 		std::string texturesRootCorrected = texturesRoot;
-		if (texturesRoot.back() != '/')
+		if (!texturesRoot.empty() && texturesRoot.back() != '/')
 		{
 			texturesRootCorrected.append(1, '/');
 		}
@@ -68,6 +68,7 @@ namespace Core {
 			return nullptr;
 		}
 
+		std::cout << "Model loaded." << std::endl;
 		m_ModelsMap[modelPath] = std::make_unique<Resource>(pData);
 		return pData;
 	}

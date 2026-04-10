@@ -21,5 +21,8 @@ private:
 	bool OnKeyPressed(Core::KeyPressedEvent& e);
 	bool OnMouseMoved(Core::MouseMovedEvent& e);
 
+	void RenderMenuWindow();
+	void RenderLightingWindow();
+
 	void ToggleVisibility();
 };

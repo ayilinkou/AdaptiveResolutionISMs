@@ -19,6 +19,14 @@ namespace Core
 			m_Meshes.push_back(m_pModelData->RegisterMesh(sceneMesh, meshIndex, m_AccumulatedModelLocal)); // TODO: this is already transposed somehow
 		}
 
+		for (size_t i = 0; i < scene->mNumLights; i++)
+		{
+			if (scene->mLights[i]->mName == modelNode->mName)
+			{
+				m_pModelData->RegisterLight(scene->mLights[i], DirectX::XMMatrixTranspose(m_AccumulatedModelLocal));
+			}
+		}
+
 		for (size_t i = 0; i < modelNode->mNumChildren; i++)
 		{
 			m_Children.emplace_back(std::make_unique<Node>(m_pModelData, this));

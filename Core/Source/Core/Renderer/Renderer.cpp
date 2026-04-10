@@ -17,6 +17,8 @@ namespace Core {
 		s_pInstance = this;
 		m_Spec = spec;
 		m_GlobalCBufferData = {};
+		m_BaseClearColor = { 0.3f, 0.6f, 0.8f, 1.f };
+		m_ClearColor = m_BaseClearColor;
 	}
 
 	Renderer::~Renderer()
@@ -72,109 +74,109 @@ namespace Core {
 			&m_Context)
 		);
 
-		ID3D11Texture2D* BackBufferPtr;
-		ASSERT_NOT_FAILED(m_SwapChain->GetBuffer(0u, __uuidof(ID3D11Texture2D), (LPVOID*)&BackBufferPtr));
-		ASSERT_NOT_FAILED(m_Device->CreateRenderTargetView(BackBufferPtr, nullptr, &m_BackBufferRTV));
-		NAME_D3D_RESOURCE(BackBufferPtr, "Back buffer texture");
+		ID3D11Texture2D* backBufferPtr;
+		ASSERT_NOT_FAILED(m_SwapChain->GetBuffer(0u, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferPtr));
+		ASSERT_NOT_FAILED(m_Device->CreateRenderTargetView(backBufferPtr, nullptr, &m_BackBufferRTV));
+		NAME_D3D_RESOURCE(backBufferPtr, "Back buffer texture");
 		NAME_D3D_RESOURCE(m_BackBufferRTV, "Back buffer RTV");
-		BackBufferPtr->Release();
-		BackBufferPtr = nullptr;
+		backBufferPtr->Release();
+		backBufferPtr = nullptr;
 
-		D3D11_TEXTURE2D_DESC DepthTextureDesc = {};
-		DepthTextureDesc.Width = m_Spec.WinSpec.Width;
-		DepthTextureDesc.Height = m_Spec.WinSpec.Height;
-		DepthTextureDesc.MipLevels = 1u;
-		DepthTextureDesc.ArraySize = 1u;
-		DepthTextureDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		DepthTextureDesc.SampleDesc.Count = 1u;
-		DepthTextureDesc.SampleDesc.Quality = 0u;
-		DepthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-		DepthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+		D3D11_TEXTURE2D_DESC depthTextureDesc = {};
+		depthTextureDesc.Width = m_Spec.WinSpec.Width;
+		depthTextureDesc.Height = m_Spec.WinSpec.Height;
+		depthTextureDesc.MipLevels = 1u;
+		depthTextureDesc.ArraySize = 1u;
+		depthTextureDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+		depthTextureDesc.SampleDesc.Count = 1u;
+		depthTextureDesc.SampleDesc.Quality = 0u;
+		depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+		depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 
-		ASSERT_NOT_FAILED(m_Device->CreateTexture2D(&DepthTextureDesc, nullptr, &m_DepthStencilTexture));
+		ASSERT_NOT_FAILED(m_Device->CreateTexture2D(&depthTextureDesc, nullptr, &m_DepthStencilTexture));
 		NAME_D3D_RESOURCE(m_DepthStencilTexture, "Depth stencil texture");
 
-		D3D11_DEPTH_STENCIL_DESC DepthStencilDesc = {};
-		DepthStencilDesc.DepthEnable = true;
-		DepthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-		DepthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+		depthStencilDesc.DepthEnable = true;
+		depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
-		DepthStencilDesc.StencilEnable = true;
-		DepthStencilDesc.StencilReadMask = 0xFF;
-		DepthStencilDesc.StencilWriteMask = 0xFF;
+		depthStencilDesc.StencilEnable = true;
+		depthStencilDesc.StencilReadMask = 0xFF;
+		depthStencilDesc.StencilWriteMask = 0xFF;
 
-		DepthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-		DepthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-		DepthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-		DepthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+		depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-		DepthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-		DepthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-		DepthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-		DepthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+		depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-		ASSERT_NOT_FAILED(m_Device->CreateDepthStencilState(&DepthStencilDesc, &m_DepthStencilStateWriteEnabled));
+		ASSERT_NOT_FAILED(m_Device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilStateWriteEnabled));
 		NAME_D3D_RESOURCE(m_DepthStencilStateWriteEnabled, "Depth stencil state write enabled");
 		
 		m_Context->OMSetDepthStencilState(m_DepthStencilStateWriteEnabled.Get(), 1u);
 
-		D3D11_DEPTH_STENCIL_VIEW_DESC DepthStencilViewDesc = {};
-		DepthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
-		DepthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+		depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 
-		ASSERT_NOT_FAILED(m_Device->CreateDepthStencilView(m_DepthStencilTexture.Get(), &DepthStencilViewDesc, &m_DSV));
+		ASSERT_NOT_FAILED(m_Device->CreateDepthStencilView(m_DepthStencilTexture.Get(), &depthStencilViewDesc, &m_DSV));
 		NAME_D3D_RESOURCE(m_DSV, "Depth stencil view");
 
 		m_Context->OMSetRenderTargets(1, m_BackBufferRTV.GetAddressOf(), m_DSV.Get());
 
-		D3D11_SHADER_RESOURCE_VIEW_DESC DepthStencilSRVDesc = {};
-		DepthStencilSRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
-		DepthStencilSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		DepthStencilSRVDesc.Texture2D.MipLevels = 1;
+		D3D11_SHADER_RESOURCE_VIEW_DESC depthStencilSRVDesc = {};
+		depthStencilSRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
+		depthStencilSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		depthStencilSRVDesc.Texture2D.MipLevels = 1;
 
-		ASSERT_NOT_FAILED(m_Device->CreateShaderResourceView(m_DepthStencilTexture.Get(), &DepthStencilSRVDesc, &m_DepthStencilSRV));
+		ASSERT_NOT_FAILED(m_Device->CreateShaderResourceView(m_DepthStencilTexture.Get(), &depthStencilSRVDesc, &m_DepthStencilSRV));
 		NAME_D3D_RESOURCE(m_DepthStencilSRV, "Depth stencil SRV");
 
-		D3D11_BLEND_DESC BlendDesc = {};
-		BlendDesc.AlphaToCoverageEnable = false;
-		BlendDesc.IndependentBlendEnable = false;
-		BlendDesc.RenderTarget[0].BlendEnable = false;
-		BlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		D3D11_BLEND_DESC blendDesc = {};
+		blendDesc.AlphaToCoverageEnable = false;
+		blendDesc.IndependentBlendEnable = false;
+		blendDesc.RenderTarget[0].BlendEnable = false;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
-		ASSERT_NOT_FAILED(m_Device->CreateBlendState(&BlendDesc, &m_BlendStateOpaque));
+		ASSERT_NOT_FAILED(m_Device->CreateBlendState(&blendDesc, &m_BlendStateOpaque));
 		NAME_D3D_RESOURCE(m_BlendStateOpaque, "Blend state opaque");
 		
-		BlendDesc.RenderTarget[0].BlendEnable = true;
-		BlendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-		BlendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-		BlendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-		BlendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-		BlendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-		BlendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].BlendEnable = true;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 
-		ASSERT_NOT_FAILED(m_Device->CreateBlendState(&BlendDesc, &m_BlendStateTransparent));
+		ASSERT_NOT_FAILED(m_Device->CreateBlendState(&blendDesc, &m_BlendStateTransparent));
 		NAME_D3D_RESOURCE(m_BlendStateTransparent, "Blend state transparent");
 
 		m_Context->OMSetBlendState(m_BlendStateOpaque.Get(), nullptr, 0xFFFFFFFF);
 
-		D3D11_RASTERIZER_DESC RasterDesc = {};
-		RasterDesc.AntialiasedLineEnable = false;
-		RasterDesc.CullMode = D3D11_CULL_BACK;
-		RasterDesc.DepthBias = 0;
-		RasterDesc.DepthBiasClamp = 0.f;
-		RasterDesc.DepthClipEnable = true;
-		RasterDesc.FillMode = D3D11_FILL_SOLID;
-		RasterDesc.FrontCounterClockwise = false;
-		RasterDesc.MultisampleEnable = false;
-		RasterDesc.ScissorEnable = false;
-		RasterDesc.SlopeScaledDepthBias = 0.f;
+		D3D11_RASTERIZER_DESC rasterDesc = {};
+		rasterDesc.AntialiasedLineEnable = false;
+		rasterDesc.CullMode = D3D11_CULL_BACK;
+		rasterDesc.DepthBias = 0;
+		rasterDesc.DepthBiasClamp = 0.f;
+		rasterDesc.DepthClipEnable = true;
+		rasterDesc.FillMode = D3D11_FILL_SOLID;
+		rasterDesc.FrontCounterClockwise = false;
+		rasterDesc.MultisampleEnable = false;
+		rasterDesc.ScissorEnable = false;
+		rasterDesc.SlopeScaledDepthBias = 0.f;
 
-		ASSERT_NOT_FAILED(m_Device->CreateRasterizerState(&RasterDesc, &m_RasterStateBackFaceCullOn));
+		ASSERT_NOT_FAILED(m_Device->CreateRasterizerState(&rasterDesc, &m_RasterStateBackFaceCullOn));
 		NAME_D3D_RESOURCE(m_RasterStateBackFaceCullOn, "Raster state back face cull on");
 
-		RasterDesc.CullMode = D3D11_CULL_NONE;
+		rasterDesc.CullMode = D3D11_CULL_NONE;
 
-		ASSERT_NOT_FAILED(m_Device->CreateRasterizerState(&RasterDesc, &m_RasterStateBackFaceCullOff));
+		ASSERT_NOT_FAILED(m_Device->CreateRasterizerState(&rasterDesc, &m_RasterStateBackFaceCullOff));
 		NAME_D3D_RESOURCE(m_RasterStateBackFaceCullOff, "Raster state back face cull off");
 
 		m_Context->RSSetState(m_RasterStateBackFaceCullOn.Get());
@@ -188,28 +190,44 @@ namespace Core {
 
 		m_Context->RSSetViewports(1u, &m_Viewport);
 
-		D3D11_SAMPLER_DESC SamplerDesc = {};
-		SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-		SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-		SamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-		SamplerDesc.MinLOD = 0;
-		SamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+		D3D11_SAMPLER_DESC samplerDesc = {};
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		samplerDesc.MinLOD = 0;
+		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&SamplerDesc, &m_SamplerLinear));
+		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&samplerDesc, &m_SamplerLinear));
 		NAME_D3D_RESOURCE(m_SamplerLinear, "Linear sampler state");
 
-		m_Context->VSSetSamplers(0u, 1u, m_SamplerLinear.GetAddressOf());
-		m_Context->HSSetSamplers(0u, 1u, m_SamplerLinear.GetAddressOf());
-		m_Context->DSSetSamplers(0u, 1u, m_SamplerLinear.GetAddressOf());
-		m_Context->GSSetSamplers(0u, 1u, m_SamplerLinear.GetAddressOf());
-		m_Context->PSSetSamplers(0u, 1u, m_SamplerLinear.GetAddressOf());
-		m_Context->CSSetSamplers(0u, 1u, m_SamplerLinear.GetAddressOf());
+		samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		samplerDesc.BorderColor[0] = 1.f;
+		samplerDesc.BorderColor[1] = 1.f;
+		samplerDesc.BorderColor[2] = 1.f;
+		samplerDesc.BorderColor[3] = 1.f;
+		samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+		samplerDesc.MinLOD = 0;
+		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-		D3D11_QUERY_DESC QueryDesc = {};
-		QueryDesc.Query = D3D11_QUERY_PIPELINE_STATISTICS;
-		ASSERT_NOT_FAILED(m_Device->CreateQuery(&QueryDesc, &m_PipelineStatsQuery));
+		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&samplerDesc, &m_ShadowMapSampler));
+		NAME_D3D_RESOURCE(m_ShadowMapSampler, "Shadow map sampler state");
+
+		ID3D11SamplerState* samplers[2] = { m_SamplerLinear.Get(), m_ShadowMapSampler.Get() };
+		m_Context->VSSetSamplers(0u, 2u, samplers);
+		m_Context->HSSetSamplers(0u, 2u, samplers);
+		m_Context->DSSetSamplers(0u, 2u, samplers);
+		m_Context->GSSetSamplers(0u, 2u, samplers);
+		m_Context->PSSetSamplers(0u, 2u, samplers);
+		m_Context->CSSetSamplers(0u, 2u, samplers);
+
+		D3D11_QUERY_DESC queryDesc = {};
+		queryDesc.Query = D3D11_QUERY_PIPELINE_STATISTICS;
+		ASSERT_NOT_FAILED(m_Device->CreateQuery(&queryDesc, &m_PipelineStatsQuery));
 		NAME_D3D_RESOURCE(m_PipelineStatsQuery, "Pipeline stats query");
 
 		CreateGlobalConstantBuffer();
@@ -262,15 +280,9 @@ namespace Core {
 		m_Device.Reset();
 	}
 
-	void Renderer::BeginScene(float red, float green, float blue, float alpha)
+	void Renderer::BeginScene()
 	{
-		float Color[4];
-		Color[0] = red;
-		Color[1] = green;
-		Color[2] = blue;
-		Color[3] = alpha;
-
-		m_Context->ClearRenderTargetView(m_BackBufferRTV.Get(), Color);
+		m_Context->ClearRenderTargetView(m_BackBufferRTV.Get(), reinterpret_cast<float*>(&m_ClearColor));
 		m_Context->ClearDepthStencilView(m_DSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
 	}
 
@@ -294,9 +306,28 @@ namespace Core {
 		m_Context->PSSetShader(m_ModelShaderProgram->GetPixelShader(), nullptr, 0u);
 	}
 
+	void Renderer::BindForDSVShadowPass()
+	{
+		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
+		m_Context->VSSetShader(m_DSVShadowShaderProgram->GetVertexShader(), nullptr, 0u);
+		m_Context->PSSetShader(m_DSVShadowShaderProgram->GetPixelShader(), nullptr, 0u);
+	}
+
+	void Renderer::BindForPointShadowPass()
+	{
+		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
+		m_Context->VSSetShader(m_PointLightShadowShaderProgram->GetVertexShader(), nullptr, 0u);
+		m_Context->PSSetShader(m_PointLightShadowShaderProgram->GetPixelShader(), nullptr, 0u);
+	}
+
 	void Renderer::SetBackFaceCulling(bool bEnabled)
 	{
 		m_Context->RSSetState(bEnabled ? m_RasterStateBackFaceCullOn.Get() : m_RasterStateBackFaceCullOff.Get());
+	}
+
+	void Renderer::SetBackBufferViewport()
+	{
+		m_Context->RSSetViewports(1u, &m_Viewport);
 	}
 
 	VramInfo Renderer::QueryVramUsage() const
@@ -400,6 +431,7 @@ namespace Core {
 		m_GlobalCBufferData.CameraData.View = DirectX::XMMatrixTranspose(activeCamera->GetViewMatrix());
 		m_GlobalCBufferData.CameraData.Proj = DirectX::XMMatrixTranspose(activeCamera->GetProjMatrix());
 		m_GlobalCBufferData.CameraData.CameraPos = activeCamera->GetPosition();
+		m_GlobalCBufferData.LightData = LightManager::GetLightBufferData(); // TODO: could give LightManager the address and have it store directly, rather than copy
 		m_GlobalCBufferData.NearZ = activeCamera->GetNearZ();
 		m_GlobalCBufferData.FarZ = activeCamera->GetFarZ();
 		m_GlobalCBufferData.Time = appTime;
@@ -413,15 +445,9 @@ namespace Core {
 		m_Context->Unmap(m_GlobalCBuffer.Get(), 0u);
 	}
 
-	void Renderer::CreateModelInputLayoutAndShaderProgram()
+	void Renderer::CreateInputLayouts()
 	{
 		HRESULT hResult;
-
-		ShaderProgramDesc desc;
-		desc.Vertex.Filepath = "Source/Shaders/BasicVS.hlsl";
-		desc.Pixel.Filepath = "Source/Shaders/BasicPS.hlsl";
-		m_ModelShaderProgram = std::make_unique<Core::ShaderProgram>(desc);
-
 		D3D11_INPUT_ELEMENT_DESC vertexLayoutElements[3] = {};
 		vertexLayoutElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 		vertexLayoutElements[0].SemanticName = "POSITION";
@@ -437,7 +463,7 @@ namespace Core {
 		vertexLayoutElements[2].SemanticName = "TEXCOORD";
 		vertexLayoutElements[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 		vertexLayoutElements[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-
+		
 		UINT numElements = _countof(vertexLayoutElements);
 
 		ASSERT_NOT_FAILED(m_Device->CreateInputLayout(vertexLayoutElements, numElements, m_ModelShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
@@ -445,8 +471,26 @@ namespace Core {
 		NAME_D3D_RESOURCE(m_ModelInputLayout, "Model input layout");
 	}
 
-	void Renderer::ReleaseModelShaderProgram()
+	void Renderer::CreateShaderPrograms()
+	{
+		ShaderProgramDesc desc;
+		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/BasicVS.hlsl";
+		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/BasicPS.hlsl";
+		m_ModelShaderProgram = std::make_unique<ShaderProgram>(desc);
+
+		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/ShadowVS.hlsl";
+		desc.Pixel.Filepath = "";
+		m_DSVShadowShaderProgram = std::make_unique<ShaderProgram>(desc);
+
+		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/ShadowVS.hlsl";
+		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/PointLightShadowPS.hlsl";
+		m_PointLightShadowShaderProgram = std::make_unique<ShaderProgram>(desc);
+	}
+
+	void Core::Renderer::DestroyShaderPrograms()
 	{
 		m_ModelShaderProgram.reset();
+		m_DSVShadowShaderProgram.reset();
+		m_PointLightShadowShaderProgram.reset();
 	}
 }

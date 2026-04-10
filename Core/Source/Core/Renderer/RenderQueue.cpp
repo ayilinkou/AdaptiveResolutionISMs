@@ -4,6 +4,7 @@
 #include "Renderer.h"
 #include "Core/Utility/MyMacros.h"
 #include "Core/Model/ModelSystem.h"
+#include "Core/Light/LightManager.h"
 
 namespace Core {
 	RenderQueue::RenderQueue()
@@ -36,30 +37,151 @@ namespace Core {
 		}
 	}
 
-	void RenderQueue::Render()
+	void RenderQueue::RenderMainPass()
 	{
 		Renderer* pRenderer = Core::Renderer::Get();
 		ID3D11DeviceContext* pContext = pRenderer->GetContext().Get();
 		pRenderer->BindForModelDraws();
+		pContext->OMSetRenderTargets(1u, pRenderer->GetBackBufferRTV().GetAddressOf(), pRenderer->GetDSV().Get());
+		pRenderer->SetBackBufferViewport();
+		RenderPass(RenderPassType::Main);
+
+		ID3D11ShaderResourceView* nullSRVs[] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+		pContext->VSSetShaderResources(1u, _countof(nullSRVs), nullSRVs);
+		pContext->PSSetShaderResources(1u, _countof(nullSRVs), nullSRVs);
+	}
+
+	void RenderQueue::RenderShadowPass()
+	{
+		Renderer* pRenderer = Core::Renderer::Get();
+		ID3D11DeviceContext* pContext = pRenderer->GetContext().Get();
+		pContext->VSSetConstantBuffers(3u, 1u, LightManager::GetLightCBuffer().GetAddressOf());
+
+		const auto& dirLights = LightManager::GetDirectionalLights();
+		if (!dirLights.empty())
+		{
+			pRenderer->BindForDSVShadowPass();
+			pContext->RSSetViewports(1u, &DirectionalLight::GetShadowMapViewport());
+			const auto& dirDSVs = DirectionalLight::GetDSVs();
+
+			UINT dirLightCount = min((UINT)dirLights.size(), MAX_DIRECTIONAL_LIGHT_COUNT);
+			for (UINT i = 0u; i < dirLightCount; i++)
+			{
+				DirectionalLight* dirLight = dirLights[i];
+				if (!dirLight->IsActive())
+					continue;
+				
+				LightManager::UpdateLightCBuffer(dirLight->GetData().ViewProj, i);
+			
+				pContext->ClearDepthStencilView(dirDSVs[i].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
+				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[i].Get());
+
+				RenderPass(RenderPassType::Shadow);
+			}
+		}
+
+		const auto& spotLights = LightManager::GetSpotLights();
+		if (!spotLights.empty())
+		{
+			pRenderer->BindForDSVShadowPass();
+			pContext->RSSetViewports(1u, &SpotLight::GetShadowMapViewport());
+			const auto& dirDSVs = SpotLight::GetDSVs();
+
+			UINT spotLightCount = min((UINT)spotLights.size(), MAX_SPOT_LIGHT_COUNT);
+			for (UINT i = 0u; i < spotLightCount; i++)
+			{
+				SpotLight* spotLight = spotLights[i];
+				if (!spotLight->IsActive())
+					continue;
+
+				LightManager::UpdateLightCBuffer(spotLight->GetData().ViewProj, i);
+
+				pContext->ClearDepthStencilView(dirDSVs[i].Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
+				pContext->OMSetRenderTargets(0u, nullptr, dirDSVs[i].Get());
+
+				RenderPass(RenderPassType::Shadow);
+			}
+		}
+
+		const auto& pointLights = LightManager::GetPointLights();
+		if (!pointLights.empty())
+		{
+			pRenderer->BindForPointShadowPass();
+			pContext->PSSetConstantBuffers(1u, 1u, LightManager::GetLightCBuffer().GetAddressOf());
+			pContext->RSSetViewports(1u, &PointLight::GetShadowMapViewport());
+			const auto& pointRTVs = PointLight::GetRTVs();
+			const auto& pointDSV = PointLight::GetDSV();
+
+			float RTVClearColor[4] = { 1.f, 1.f, 1.f, 1.f };
+			UINT pointLightCount = min((UINT)pointLights.size(), MAX_POINT_LIGHT_COUNT);
+			UINT activePointLightIndex = 0u;
+			for (UINT pLightIndex = 0u; pLightIndex < pointLightCount; pLightIndex++)
+			{	
+				PointLight* pLight = pointLights[pLightIndex];
+				if (!pLight->IsActive())
+					continue;
+
+				const std::array<DirectX::XMMATRIX, 6> viewProjectionsT = pLight->GetViewProjectionsT();
+			
+				// for each face
+				for (UINT face = 0u; face < 6u; face++)
+				{
+					Microsoft::WRL::ComPtr<ID3D11RenderTargetView> RTV = pointRTVs[activePointLightIndex * 6 + face];
+				
+					pContext->ClearRenderTargetView(RTV.Get(), reinterpret_cast<float*>(&RTVClearColor));
+					pContext->ClearDepthStencilView(pointDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
+
+					LightManager::UpdateLightCBuffer(viewProjectionsT[face], pLightIndex);
+					pContext->OMSetRenderTargets(1u, RTV.GetAddressOf(), pointDSV.Get());
+
+					RenderPass(RenderPassType::Shadow);
+				}
+				activePointLightIndex++;
+			}
+		}
+
+		ID3D11ShaderResourceView* nullSRVs[] = {nullptr, nullptr};
+		pContext->PSSetShaderResources(2u, _countof(nullSRVs), nullSRVs);
+		pContext->OMSetRenderTargets(0u, nullptr, nullptr);
+	}
+
+	void Core::RenderQueue::RenderPass(RenderPassType passType)
+	{
+		Renderer* pRenderer = Core::Renderer::Get();
+		ID3D11DeviceContext* pContext = pRenderer->GetContext().Get();
 
 		ID3D11Buffer* pCBuffers[2] = { m_ModelLocalCBuffer.Get(), m_ModelWorldCBuffer.Get() };
 		pContext->VSSetConstantBuffers(1u, 2u, pCBuffers);
+
+		if (passType == RenderPassType::Main)
+		{
+			ID3D11ShaderResourceView* shadowMapSRVs[3] = { DirectionalLight::GetShadowMapsSRV().Get(), SpotLight::GetShadowMapsSRV().Get(),
+				PointLight::GetShadowMapsSRV().Get() };
+			pContext->PSSetShaderResources(2u, _countof(shadowMapSRVs), shadowMapSRVs);
+		}
 
 		for (const auto& [pModelData, modelWorldTransformsT] : m_ModelWorldTransformsMapT)
 		{
 			pModelData->BindModelBuffers();
 
 			UINT modelWorldCount = (UINT)modelWorldTransformsT.size();
+			assert(modelWorldCount <= MAX_MODEL_WORLD_COUNT);
 			UpdateWorldCBuffer(modelWorldTransformsT);
 
 			for (const Mesh& mesh : pModelData->GetMeshes())
 			{
 				Material* pMat = mesh.GetMaterial();
 
-				// bind material resources and buffers
-				ID3D11ShaderResourceView* SRVs[2] = { pMat->GetAlbedoSRV(), pMat->GetSpecularSRV() };
-				pContext->PSSetShaderResources(0u, 2u, SRVs);
-				pContext->PSSetConstantBuffers(1u, 1u, pMat->GetCBuffer().GetAddressOf());
+				if (passType == RenderPassType::Shadow && !pMat->IsOpaque())
+					continue;
+
+				if (passType == RenderPassType::Main)
+				{
+					// bind material resources and buffers
+					ID3D11ShaderResourceView* SRVs[2] = { pMat->GetAlbedoSRV(), pMat->GetSpecularSRV() };
+					pContext->PSSetShaderResources(0u, _countof(SRVs), SRVs);
+					pContext->PSSetConstantBuffers(1u, 1u, pMat->GetCBuffer().GetAddressOf());
+				}
 
 				pRenderer->SetBackFaceCulling(!pMat->IsTwoSided());
 

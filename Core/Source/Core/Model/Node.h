@@ -20,7 +20,7 @@ namespace Core {
 	{
 	public:
 		Node(ModelData* pModelData, Node* pParentNode)
-			: m_pModelData(pModelData), m_ParentNode(pParentNode) {}
+			: m_pModelData(pModelData), m_ParentNode(pParentNode), m_AccumulatedModelLocal(DirectX::XMMatrixIdentity()) {}
 
 		void ProcessNode(aiNode* modelNode, const aiScene* scene, const DirectX::XMMATRIX& parentAccumulatedModelLocal);
 		void SetModelData(ModelData* pModelData) { m_pModelData = pModelData; }

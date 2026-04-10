@@ -44,6 +44,11 @@ namespace Core {
 		return &m_Meshes[meshIndex];
 	}
 
+	void ModelData::RegisterLight(aiLight* pLight, const DirectX::XMMATRIX& accumTransform)
+	{
+		m_Lights.emplace_back(std::make_pair(*pLight, accumTransform));
+	}
+
 	void ModelData::ReleaseIndexAndVertexArrays()
 	{
 		if (m_Indices)

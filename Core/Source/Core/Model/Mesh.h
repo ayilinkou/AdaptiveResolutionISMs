@@ -30,6 +30,6 @@ namespace Core {
 
 		UINT m_IndexCount = 0u;
 		UINT m_IndexOffset = 0u;
-		Material* m_Material;
+		Material* m_Material = nullptr;
 	};
 }
