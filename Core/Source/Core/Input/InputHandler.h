@@ -18,15 +18,18 @@ namespace Core {
 		static InputHandler* Init(std::function<void(Event&)> callback, HWND hwnd);
 		static void Shutdown();
 		
-		static void HandleInputs();
+		static void HandleInputs(bool bCenterCursor);
 		static InputHandler* Get() { return s_pInstance; }
 
 		static LRESULT MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
 
 	private:
 		static void ProcessMouseMovement();
+		static void ProcessKeyboardMovement();
 		
 		static void RaiseEvent(Event& e);
+
+		static bool IsMovementKey(WPARAM wparam);
 
 	private:
 		static InputHandler* s_pInstance;

@@ -1,3 +1,5 @@
+#include "imgui_impl_win32.h"
+
 #include "Window.h"
 #include "Core/Input/InputHandler.h"
 #include "Core/Application/Application.h"
@@ -10,10 +12,10 @@ namespace Core {
 
 	Window::~Window()
 	{
-		Destroy();
+		Shutdown();
 	}
 
-	void Window::Create()
+	void Window::Init()
 	{
 		WNDCLASSEX wc;
 		DEVMODE dmScreenSettings;
@@ -85,6 +87,8 @@ namespace Core {
 
 		ShowCursor(false);
 
+		ImGui_ImplWin32_Init(m_hwnd);
+
 		RECT rect;
 		GetClientRect(m_hwnd, &rect);
 		POINT center = { (rect.right - rect.left) / 2, (rect.bottom - rect.top) / 2 };
@@ -92,8 +96,10 @@ namespace Core {
 		SetCursorPos(center.x, center.y);
 	}
 
-	void Window::Destroy()
+	void Window::Shutdown()
 	{
+		ImGui_ImplWin32_Shutdown();
+		
 		ShowCursor(true);
 		ClipCursor(NULL);
 

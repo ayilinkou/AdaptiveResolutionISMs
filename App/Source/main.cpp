@@ -1,5 +1,6 @@
 #include "Core/Application/Application.h"
-#include "AppLayer.h"
+#include "Layer/AppLayer.h"
+#include "Layer/UILayer.h"
 
 int main()
 {
@@ -16,6 +17,7 @@ int main()
 
 	Core::Application app(appSpec);
 	app.PushLayer<AppLayer>("AppLayer");
+	app.PushLayer<UILayer>("UILayer");
 	app.Run();
 
 	return 0;

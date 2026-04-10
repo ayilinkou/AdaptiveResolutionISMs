@@ -1,5 +1,9 @@
 #include <ranges>
 
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx11.h"
+
 #include "Application.h"
 #include "Core/Input/InputHandler.h"
 #include "Core/Utility/Logger.h"
@@ -19,8 +23,12 @@ namespace Core {
 		HRESULT hResult;
 		ASSERT_NOT_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGui::StyleColorsDark();
+
 		m_Window = std::make_shared<Window>(m_Spec.WinSpec);
-		m_Window->Create();
+		m_Window->Init();
 
 		Logger::Init(m_Window->GetHandle());
 
@@ -50,6 +58,8 @@ namespace Core {
 		m_Renderer.reset();
 		InputHandler::Shutdown();
 		m_Window.reset();
+		
+		ImGui::DestroyContext();
 	}
 
 	void Application::Run()
@@ -61,7 +71,8 @@ namespace Core {
 
 		while (m_Running)
 		{
-			InputHandler::HandleInputs();
+			bool bShouldCenterCursor = m_NeedsCursorVisible.empty();
+			InputHandler::HandleInputs(bShouldCenterCursor);
 
 			if (m_Window->ShouldClose())
 			{
@@ -86,8 +97,16 @@ namespace Core {
 
 			Renderer::Get()->BeginScene(0.3f, 0.6f, 0.8f, 1.f);
 
+			ImGui_ImplDX11_NewFrame();
+			ImGui_ImplWin32_NewFrame();
+			ImGui::NewFrame();
+
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnRender(m_DeltaTime);
+
+			ImGui::EndFrame();
+			ImGui::Render();
+			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 			Renderer::Get()->EndScene();
 		}

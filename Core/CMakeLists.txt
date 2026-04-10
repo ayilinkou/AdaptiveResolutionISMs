@@ -69,6 +69,7 @@ add_library(Core STATIC)
 # Add dependencies
 find_package(directxtex CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 target_sources(Core PRIVATE ${SOURCES})
 
@@ -83,6 +84,7 @@ target_link_libraries(Core PRIVATE
 
 target_link_libraries(Core PUBLIC
 	assimp::assimp
+	imgui::imgui
 	d3d11
 	dxgi
 	d3dcompiler

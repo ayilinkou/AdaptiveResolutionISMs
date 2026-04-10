@@ -4,8 +4,11 @@
 
 set(SOURCES
     Source/main.cpp
-    Source/AppLayer.h
-    Source/AppLayer.cpp
+
+    Source/Layer/AppLayer.h
+    Source/Layer/AppLayer.cpp
+    Source/Layer/UILayer.h
+    Source/Layer/UILayer.cpp
 )
 
 set(SHADER_FILES

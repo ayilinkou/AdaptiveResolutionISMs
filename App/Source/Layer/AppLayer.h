@@ -1,17 +1,9 @@
 #pragma once
 
-#include "wrl.h"
-
-#include "d3d11.h"
-#include "DirectXMath.h"
-
 #include "Core/Layer/Layer.h"
 #include "Core/Event/InputEvents.h"
-#include "Core/Shader/ShaderProgram.h"
 #include "Core/Renderer/RenderQueue.h"
 #include "Core/Model/Model.h"
-
-using namespace Microsoft::WRL;
 
 class AppLayer : public Core::Layer
 {
@@ -24,6 +16,8 @@ public:
 	virtual void OnUpdate(double dt) override;
 	virtual void OnRender(double dt) override;
 
+	void LoadScene(const std::string& modelPath, const std::string& texturesRoot);
+
 private:
 	void Init();
 	void Shutdown();
@@ -31,13 +25,8 @@ private:
 	bool OnKeyPressed(Core::KeyPressedEvent& e);
 	bool OnMouseMoved(Core::MouseMovedEvent& e);
 
-	void ApplyCameraMovement();
-
 private:
-	std::unique_ptr<Core::Model> m_EmeraldSquare;
-	std::unique_ptr<Core::Model> m_Bistro;
+	std::vector<std::unique_ptr<Core::Model>> m_Models;
 
 	std::unique_ptr<Core::RenderQueue> m_RenderQueue;
-
-	UINT m_IndexCount;
 };

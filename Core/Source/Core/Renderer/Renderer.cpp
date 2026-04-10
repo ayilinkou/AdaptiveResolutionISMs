@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "dxgi1_4.h"
+#include "imgui_impl_dx11.h"
 
 #include "Renderer.h"
 #include "Core/Utility/MyMacros.h"
@@ -218,10 +219,14 @@ namespace Core {
 		m_Context->GSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
 		m_Context->PSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
 		m_Context->CSSetConstantBuffers(0u, 1u, m_GlobalCBuffer.GetAddressOf());
+
+		ImGui_ImplDX11_Init(m_Device.Get(), m_Context.Get());
 	}
 
 	void Renderer::Shutdown()
 	{
+		ImGui_ImplDX11_Shutdown();
+		
 		m_SwapChain->SetFullscreenState(false, NULL);
 
 		m_Context->ClearState();

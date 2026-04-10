@@ -3,6 +3,10 @@
 	"version-string": "0.1.0",
 	"dependencies": [
 		"directxtex",
-		"assimp"
+		"assimp",
+		{
+			"name": "imgui",
+			"features": [ "win32-binding", "dx11-binding" ]
+		}
 	]
 }

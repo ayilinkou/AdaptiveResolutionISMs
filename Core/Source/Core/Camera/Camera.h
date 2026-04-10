@@ -26,7 +26,9 @@ namespace Core {
 		float GetFarZ() const { return m_FarZ; }
 
 		void RotateCamera(float mouseX, float mouseY);
-		void MoveCamera(DirectX::XMFLOAT3 wasdVector, float qeVector);
+		void AddWASDVector(const DirectX::XMFLOAT3 v) { m_wasdVector.x += v.x; m_wasdVector.y += v.y; m_wasdVector.z += v.z; }
+		void AddQEVector(float v) { m_qeVector += v; }
+		void MoveCamera(float dt);
 
 	private:
 		Transform m_Transform;
@@ -41,5 +43,8 @@ namespace Core {
 
 		float m_CameraSpeed = 10.f;
 		float m_MouseSens = 0.1f;
+
+		DirectX::XMFLOAT3 m_wasdVector;
+		float m_qeVector;
 	};
 }

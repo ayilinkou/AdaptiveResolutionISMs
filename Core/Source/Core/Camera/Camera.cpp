@@ -1,5 +1,4 @@
 #include "Camera.h"
-#include "Core/Application/Application.h"
 
 namespace Core {
 	Camera::Camera(const DirectX::XMMATRIX& proj, float nearZ, float farZ)
@@ -7,6 +6,8 @@ namespace Core {
 	{
 		m_Transform.Position = { 0.f, 0.f, -5.f };
 		m_LookDir = { 0.f, 0.f, 1.f };
+		m_wasdVector = { 0.f, 0.f, 0.f };
+		m_qeVector = 0.f;
 	}
 
 	void Camera::SetLookDir(float x, float y, float z)
@@ -45,18 +46,21 @@ namespace Core {
 		m_Transform.SetRotation(m_Transform.Rotation.x - mouseY * m_MouseSens, m_Transform.Rotation.y + mouseX * m_MouseSens);
 	}
 
-	void Camera::MoveCamera(DirectX::XMFLOAT3 wasdVector, float qeVector)
+	void Camera::MoveCamera(float dt)
 	{
+		// TODO: this is happening every frame even if there's no movement vector
 		// Q and E are for moving along the Y axis only, therefore must not be transformed
-		DirectX::XMVECTOR v = DirectX::XMLoadFloat3(&wasdVector);
+		DirectX::XMVECTOR v = DirectX::XMLoadFloat3(&m_wasdVector);
 		v = DirectX::XMVector3TransformCoord(v, m_RotationMatrix);
-		v = DirectX::XMVectorAdd(v, DirectX::XMVectorSet(0.f, qeVector, 0.f, 0.f));
+		v = DirectX::XMVectorAdd(v, DirectX::XMVectorSet(0.f, m_qeVector, 0.f, 0.f));
 		v = DirectX::XMVector3Normalize(v);
-		v = DirectX::XMVectorScale(v, m_CameraSpeed * (float)Application::Get()->GetDeltaTime());
+		v = DirectX::XMVectorScale(v, m_CameraSpeed * dt);
 
 		DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&m_Transform.Position);
 		pos = DirectX::XMVectorAdd(v, pos);
 
 		DirectX::XMStoreFloat3(&m_Transform.Position, pos);
+		m_wasdVector = { 0.f, 0.f, 0.f };
+		m_qeVector = 0.f;
 	}
 }

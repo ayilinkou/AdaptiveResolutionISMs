@@ -23,8 +23,8 @@ namespace Core {
 		Window(const WindowSpec& spec = WindowSpec());
 		~Window();
 
-		void Create();
-		void Destroy();
+		void Init();
+		void Shutdown();
 
 		bool ShouldClose() const;
 

@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <chrono>
+#include <unordered_set>
 
 #include "Core/Window/Window.h"
 #include "Core/Layer/Layer.h"
@@ -53,6 +54,9 @@ namespace Core {
 		std::shared_ptr<Camera> GetCamera() { return m_Camera; }
 		double GetDeltaTime() const { return m_DeltaTime; }
 
+		void RegisterNeedForCursor(void* ptr) { m_NeedsCursorVisible.insert(ptr); }
+		void UnregisterNeedForCursor(void* ptr) { m_NeedsCursorVisible.erase(ptr); }
+
 	private:
 		void RaiseEvent(Event& e);
 
@@ -72,6 +76,12 @@ namespace Core {
 		double m_DeltaTime;
 		double m_FPS;
 		bool m_Running = false;
+
+		/*
+		Set of pointers to objects which need the cursor to be visible.
+		When size() > 0, this will be used to stop the cursor from resetting to the centre of the screen.
+		 */
+		std::unordered_set<void*> m_NeedsCursorVisible;
 
 		static Application* s_pApp;
 	};
