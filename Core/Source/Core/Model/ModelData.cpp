@@ -1,4 +1,5 @@
-#include <print>
+#include <format>
+#include <iostream>
 
 #include "assimp/mesh.h"
 
@@ -18,7 +19,6 @@ namespace Core {
 		m_Vertices = std::make_unique<std::vector<Vertex>>();
 
 		m_PointCloudCount = 0u;
-		m_PointCloudDensity = 0.01f;
 	}
 
 	ModelData::~ModelData()
@@ -111,8 +111,9 @@ namespace Core {
 
 	void ModelData::ProcessPointCloudVertices()
 	{
+		float density = Renderer::Get()->GetPointCloudDensity();
 		Timer loadFromFileTimer("Loading point cloud from file");
-		m_PointCloudPoints = PointCloudConverter::LoadFromFile(m_ModelPath, m_PointCloudDensity);
+		m_PointCloudPoints = PointCloudConverter::LoadFromFile(m_ModelPath, density);
 		
 		if (m_PointCloudPoints.get())
 		{
@@ -123,13 +124,14 @@ namespace Core {
 		{
 			// not saved to file
 			// process vertices and save to file
-			std::print("Processing point cloud vertices...");
+			std::cout << std::format("Processing point cloud vertices with density {}...", density) << std::endl;
 			loadFromFileTimer.InvalidateTimer();
+
 			Timer processTimer("Processing point cloud vertices");
-			m_PointCloudPoints = PointCloudConverter::LoadFromBuffers(*m_Indices, *m_Vertices, m_MeshLocalTransformsT, m_PointCloudDensity);
+			m_PointCloudPoints = PointCloudConverter::LoadFromBuffers(*m_Indices, *m_Vertices, m_MeshLocalTransformsT, density);
 			processTimer.EndTimer();
 
-			PointCloudConverter::SaveToFile(m_ModelPath, *m_PointCloudPoints, m_PointCloudDensity);
+			PointCloudConverter::SaveToFile(m_ModelPath, *m_PointCloudPoints, density);
 		}
 	}
 }

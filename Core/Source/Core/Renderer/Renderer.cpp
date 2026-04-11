@@ -19,6 +19,8 @@ namespace Core {
 		m_GlobalCBufferData = {};
 		m_BaseClearColor = { 0.3f, 0.6f, 0.8f, 1.f };
 		m_ClearColor = m_BaseClearColor;
+		m_BasePointCloudDensity = 0.001f;
+		m_PointCloudDensity = m_BasePointCloudDensity;
 	}
 
 	Renderer::~Renderer()
@@ -466,6 +468,12 @@ namespace Core {
 		m_LightingPassShaderProgram->Bind();
 		DisableDepthWriteAlwaysPass();
 		DisableBlending();
+	}
+
+	void Renderer::BindForISMRanking()
+	{
+		ID3D11ShaderResourceView* SRVs[2] = { m_NormalSpecSRV.Get(), m_DepthStencilSRV.Get() };
+		m_Context->CSSetShaderResources(0u, 2u, SRVs);
 	}
 
 	void Renderer::BindForDSVShadowPass()

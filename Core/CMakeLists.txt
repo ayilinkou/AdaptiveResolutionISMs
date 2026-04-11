@@ -91,6 +91,7 @@ set(SHADER_FILES
     Source/Core/Shader/Shaders/ISMSplatCS.hlsl
     Source/Core/Shader/Shaders/ISMTransferCS.hlsl
     Source/Core/Shader/Shaders/ISMPullPushCS.hlsl
+    Source/Core/Shader/Shaders/ISMRankingCS.hlsl
 )
 
 set_property(SOURCE ${SHADER_FILES} PROPERTY VS_SETTINGS "ExcludedFromBuild=true")

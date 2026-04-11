@@ -43,7 +43,7 @@ void Pull(uint3 id : SV_DispatchThreadID)
 	float validCount = children[0].bValid + children[1].bValid + children[2].bValid + children[3].bValid;
 	if (validCount == 0.f)
 	{
-		ismDestMip[uint3(texel, lightIndex)] = float4(pixel.minDepth, pixel.maxDepth, ISM_PIXEL_INVALID, pixel.coverage);
+		ismDestMip[uint3(texel, 0u)] = float4(pixel.minDepth, pixel.maxDepth, ISM_PIXEL_INVALID, pixel.coverage);
 		return;
 	}
 	
@@ -81,7 +81,7 @@ void Pull(uint3 id : SV_DispatchThreadID)
 	pixel.bValid = ISM_PIXEL_VALID;
 	pixel.coverage = sumCoverage / 4.f;
 	
-	ismDestMip[uint3(texel, lightIndex)] = float4(pixel.minDepth, pixel.maxDepth, pixel.bValid, pixel.coverage);
+	ismDestMip[uint3(texel, 0u)] = float4(pixel.minDepth, pixel.maxDepth, pixel.bValid, pixel.coverage);
 }
 
 [numthreads(ISM_PULLPUSH_THREADS_X, ISM_PULLPUSH_THREADS_Y, 1)]
@@ -91,7 +91,7 @@ void Push(uint3 id : SV_DispatchThreadID)
 	if (texel.x >= destMipRes || texel.y >= destMipRes)
 		return;
 	
-	float4 dst = ismDestMip.Load(int4(texel, lightIndex, 0));
+	float4 dst = ismDestMip.Load(int4(texel, 0, 0));
 	SplatPixel dstPixel;
 	dstPixel.minDepth = dst.r;
 	dstPixel.maxDepth = dst.g;
@@ -107,7 +107,7 @@ void Push(uint3 id : SV_DispatchThreadID)
 			float far = globalCBuffer.Lights.SpotLights[lightIndex].Radius;
 			float viewZ = near + dstPixel.minDepth * (far - near);
 			float ndcZ = saturate(far / (far - near) - (near * far) / ((far - near) * viewZ));
-			ismDestMip[uint3(texel, lightIndex)] = float4(ndcZ, dstPixel.maxDepth, ISM_PIXEL_VALID, dstPixel.coverage);
+			ismDestMip[uint3(texel, 0u)] = float4(ndcZ, dstPixel.maxDepth, ISM_PIXEL_VALID, dstPixel.coverage);
 		}
 		return;
 	}
@@ -129,8 +129,8 @@ void Push(uint3 id : SV_DispatchThreadID)
 			float far = globalCBuffer.Lights.SpotLights[lightIndex].Radius;
 			float viewZ = near + dstPixel.minDepth * (far - near);
 			float ndcZ = saturate(far / (far - near) - (near * far) / ((far - near) * viewZ));
-			ismDestMip[uint3(texel, lightIndex)] = float4(ndcZ, dstPixel.maxDepth, ISM_PIXEL_VALID, dstPixel.coverage);
+			ismDestMip[uint3(texel, 0u)] = float4(ndcZ, dstPixel.maxDepth, ISM_PIXEL_VALID, dstPixel.coverage);
 		}
-		ismDestMip[uint3(texel, lightIndex)] = float4(srcPixel.minDepth, srcPixel.maxDepth, ISM_PIXEL_VALID, srcPixel.coverage);
+		ismDestMip[uint3(texel, 0u)] = float4(srcPixel.minDepth, srcPixel.maxDepth, ISM_PIXEL_VALID, srcPixel.coverage);
 	}	
 }

@@ -44,6 +44,12 @@ DirectX::XMFLOAT3 ToneMapACES(const DirectX::XMFLOAT3& hdr, float exposure = 1.f
 }
 
 namespace Core {
+	Model::Model(const std::string_view modelPath, const std::string_view texturesPath)
+	{
+		Init(std::string(modelPath), std::string(texturesPath));
+		ModelSystem::RegisterModel(this);
+	}
+
 	Model::Model(const std::string& modelPath, const std::string& texturesPath)
 	{
 		Init(modelPath, texturesPath);

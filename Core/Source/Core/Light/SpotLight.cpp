@@ -23,6 +23,7 @@ namespace Core {
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SpotLight::s_ShadowMapsSRV;
 	std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>> SpotLight::s_ISM_UAVs;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> SpotLight::s_ISMMipSRVs;
+	UINT SpotLight::s_GlobalID = 0u;
 
 	SpotLight::SpotLight(DirectX::XMFLOAT3 color, DirectX::XMFLOAT3 attenuation, DirectX::XMFLOAT3 dir)
 		: m_LocalPosition({ 0.f, 0.f, 0.f })
@@ -31,6 +32,9 @@ namespace Core {
 		m_Data.Attenuation = attenuation;
 		m_Data.Direction = dir;
 		m_Data.NearZ = m_NearZ;
+		m_Data.MinBias = m_ShadowType == ShadowType::ShadowMap ? LightManager::GetSpotLightMinBiasShadowMapRef() : LightManager::GetSpotLightMinBiasISMRef();
+		m_Data.MaxBias = m_ShadowType == ShadowType::ShadowMap ? LightManager::GetSpotLightMaxBiasShadowMapRef() : LightManager::GetSpotLightMaxBiasISMRef();
+		m_Data.GlobalID = SpotLight::s_GlobalID++;
 		m_Name = "Spot Light";
 		UpdateView();
 		UpdateProj();

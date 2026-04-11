@@ -10,6 +10,10 @@ namespace Core {
 	LightBuffer LightManager::s_LightBuffer = {};
 	Microsoft::WRL::ComPtr<ID3D11Buffer> LightManager::s_LightCBuffer;
 	float LightManager::s_AmbientStrength = 0.2f;
+	float LightManager::s_SpotLightMinBiasShadowMap = 0.0001f;
+	float LightManager::s_SpotLightMaxBiasShadowMap = 0.0005f;
+	float LightManager::s_SpotLightMinBiasISM = 0.0003f;
+	float LightManager::s_SpotLightMaxBiasISM = 0.0008f;
 
 	void LightManager::Init()
 	{
@@ -123,9 +127,14 @@ namespace Core {
 			if (!pSpotLight || !pSpotLight->IsActive())
 				continue;
 
+			float minBias = pSpotLight->GetShadowType() == ShadowType::ShadowMap ? s_SpotLightMinBiasShadowMap : s_SpotLightMinBiasISM;
+			float maxBias = pSpotLight->GetShadowType() == ShadowType::ShadowMap ? s_SpotLightMaxBiasShadowMap : s_SpotLightMaxBiasISM;
+
 			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount] = pSpotLight->GetData();
 			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].CosInnerAngle = cos(DirectX::XMConvertToRadians(pSpotLight->m_ConeInnerAngle / 2.f));
 			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].CosOuterAngle = cos(DirectX::XMConvertToRadians(pSpotLight->m_ConeOuterAngle / 2.f));
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].MinBias = minBias;
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].MaxBias = maxBias;
 			s_LightBuffer.SpotLightCount++;
 		}
 

@@ -77,14 +77,22 @@ namespace Core {
 
 		void BindForGeometryPass();
 		void BindForLightingPass();
+		void BindForISMRanking();
 		void BindForDSVShadowPass();
 		void BindForPointLightShadowPass();
 		void SetBackFaceCulling(bool bEnabled);
 		void SetBackBufferViewport();
 
+		const UINT GetBackBufferWidth() const { return m_Spec.WinSpec.Width; }
+		const UINT GetBackBufferHeight() const { return m_Spec.WinSpec.Height; }
+
 		DirectX::XMFLOAT4& GetClearColor() { return m_ClearColor; }
 		void SetClearColor(DirectX::XMFLOAT4 clearColor) { m_ClearColor = clearColor; }
 		void ResetClearColor() { m_ClearColor = m_BaseClearColor; }
+
+		const float GetPointCloudDensity() const { return m_PointCloudDensity; }
+		void SetPointCloudDensity(float newPointCloudDensity) { m_PointCloudDensity = newPointCloudDensity; }
+		void ResetPointCloudDensity() { m_PointCloudDensity = m_BasePointCloudDensity; }
 
 		// this shows VRAM usage for the adapter across all processes, not just this application
 		VramInfo QueryVramUsage() const;
@@ -160,6 +168,9 @@ namespace Core {
 
 		DirectX::XMFLOAT4 m_BaseClearColor;
 		DirectX::XMFLOAT4 m_ClearColor;
+
+		float m_PointCloudDensity;
+		float m_BasePointCloudDensity;
 
 		friend class Application;
 	};

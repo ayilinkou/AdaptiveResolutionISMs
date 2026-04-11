@@ -14,6 +14,7 @@ namespace Core {
 	{
 	public:
 		Model() {}
+		Model(const std::string_view modelPath, const std::string_view texturesPath);
 		Model(const std::string& modelPath, const std::string& texturesPath = "");
 		Model(const Model& other) = delete;
 		Model& operator=(const Model& other) = delete;

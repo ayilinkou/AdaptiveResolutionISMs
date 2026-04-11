@@ -51,6 +51,10 @@ namespace Core {
 		static const LightBuffer& GetLightBufferData() { return s_LightBuffer; }
 		static Microsoft::WRL::ComPtr<ID3D11Buffer> GetLightCBuffer() { return s_LightCBuffer; }
 		static float& GetAmbientStrengthRef() { return s_AmbientStrength; }
+		static float& GetSpotLightMinBiasShadowMapRef() { return s_SpotLightMinBiasShadowMap; }
+		static float& GetSpotLightMaxBiasShadowMapRef() { return s_SpotLightMaxBiasShadowMap; }
+		static float& GetSpotLightMinBiasISMRef() { return s_SpotLightMinBiasISM; }
+		static float& GetSpotLightMaxBiasISMRef() { return s_SpotLightMaxBiasISM; }
 
 		static void UpdateLightBufferData();
 		static void UpdateLightCBuffer(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, UINT lightIndex);
@@ -65,6 +69,10 @@ namespace Core {
 		static std::vector<DirectionalLight*> s_DirLights;
 		static LightBuffer s_LightBuffer;
 		static float s_AmbientStrength;
+		static float s_SpotLightMinBiasShadowMap;
+		static float s_SpotLightMaxBiasShadowMap;
+		static float s_SpotLightMinBiasISM;
+		static float s_SpotLightMaxBiasISM;
 
 		static Microsoft::WRL::ComPtr<ID3D11Buffer> s_LightCBuffer;
 	};

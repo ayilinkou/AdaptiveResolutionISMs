@@ -1,9 +1,21 @@
-namespace ScenePaths {
-	std::array<std::string, 2> EmeraldSquareDay = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Day.fbx", "Models/EmeraldSquare_v4_1" };
-	std::array<std::string, 2> EmeraldSquareDusk = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Dusk.fbx", "Models/EmeraldSquare_v4_1" };
-	std::array<std::string, 2> BistroExterior = { "Models/Bistro_v5_2/BistroExterior.fbx", "Models/Bistro_v5_2" };
-	std::array<std::string, 2> BistroInterior = { "Models/Bistro_v5_2/BistroInterior.fbx", "Models/Bistro_v5_2" };
-	std::array<std::string, 2> BistroInteriorWine = { "Models/Bistro_v5_2/BistroInterior_Wine.fbx", "Models/Bistro_v5_2" };
+#include <string_view>
+
+struct SceneInfo
+{
+	std::string_view ModelPath;
+	std::string_view TexturesRoot;
+	const float PointCloudDensity = 0.f;
+};
+
+#ifdef UILAYER_CPP
+
+namespace Scenes {
+	constexpr SceneInfo EmeraldSquareDay = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Day.fbx", "Models/EmeraldSquare_v4_1", 0.0005f };
+	constexpr SceneInfo EmeraldSquareDusk = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Dusk.fbx", "Models/EmeraldSquare_v4_1", 0.0005f };
+	constexpr SceneInfo BistroExterior = { "Models/Bistro_v5_2/BistroExterior.fbx", "Models/Bistro_v5_2" };
+	constexpr SceneInfo BistroInterior = { "Models/Bistro_v5_2/BistroInterior.fbx", "Models/Bistro_v5_2" };
+	constexpr SceneInfo BistroInteriorWine = { "Models/Bistro_v5_2/BistroInterior_Wine.fbx", "Models/Bistro_v5_2" };
+
 }
 
 void UILayer::LoadEmeraldSquareNight()
@@ -11,7 +23,7 @@ void UILayer::LoadEmeraldSquareNight()
 	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
 	if (pAppLayer)
 	{
-		pAppLayer->LoadScene(ScenePaths::EmeraldSquareDusk[0], ScenePaths::EmeraldSquareDusk[1]);
+		pAppLayer->LoadScene(Scenes::EmeraldSquareDusk);
 		Core::LightManager::GetAmbientStrengthRef() = 0.05f;
 		Core::Renderer::Get()->SetClearColor({ 0.05f, 0.05f, 0.1f, 1.f });
 
@@ -107,7 +119,7 @@ void UILayer::LoadEmeraldSquareDusk()
 	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
 	if (pAppLayer)
 	{
-		pAppLayer->LoadScene(ScenePaths::EmeraldSquareDusk[0], ScenePaths::EmeraldSquareDusk[1]);
+		pAppLayer->LoadScene(Scenes::EmeraldSquareDusk);
 
 		auto dirLight = std::make_unique<Core::DirectionalLight>(DirectX::XMFLOAT3(1.f, 0.7f, 0.5f), DirectX::XMFLOAT3(0.9f, -0.3f, 0.2f));
 		dirLight->SetIntensity(1.5f);
@@ -122,7 +134,7 @@ void UILayer::LoadBistroExterior()
 {
 	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
 	if (pAppLayer)
-		pAppLayer->LoadScene(ScenePaths::BistroExterior[0], ScenePaths::BistroExterior[1]);
+		pAppLayer->LoadScene(Scenes::BistroExterior);
 
 	Core::LightManager::GetAmbientStrengthRef() = 0.2f;
 	DirectX::XMFLOAT4 skyboxColor = { 1.f, 0.7f, 0.5f, 1.f };
@@ -144,7 +156,7 @@ void UILayer::LoadBistroInterior()
 {
 	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
 	if (pAppLayer)
-		pAppLayer->LoadScene(ScenePaths::BistroInterior[0], ScenePaths::BistroInterior[1]);
+		pAppLayer->LoadScene(Scenes::BistroInterior);
 	ToggleVisibility();
 }
 
@@ -152,7 +164,8 @@ void UILayer::LoadBistroInteriorWine()
 {
 	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
 	if (pAppLayer)
-		pAppLayer->LoadScene(ScenePaths::BistroInteriorWine[0], ScenePaths::BistroInteriorWine[1]);
+		pAppLayer->LoadScene(Scenes::BistroInteriorWine);
 	ToggleVisibility();
 }
-}
+
+#endif

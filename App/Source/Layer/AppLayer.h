@@ -9,6 +9,8 @@
 #include "Core/Model/Model.h"
 #include "Core/Light/Light.h"
 
+struct SceneInfo;
+
 class AppLayer : public Core::Layer
 {
 public:
@@ -20,7 +22,7 @@ public:
 	virtual void OnUpdate(double dt) override;
 	virtual void OnRender(double dt) override;
 
-	void LoadScene(const std::string& modelPath, const std::string& texturesRoot);
+	void LoadScene(const SceneInfo& scene);
 
 	void AddLight(std::unique_ptr<Core::Light>&& light);
 
@@ -39,5 +41,5 @@ private:
 
 	std::unique_ptr<Core::RenderQueue> m_RenderQueue;
 
-	Core::ShadowType m_ShadowType = Core::ShadowType::ShadowMap;
+	Core::ShadowType m_ShadowType = Core::ShadowType::ISM;
 };

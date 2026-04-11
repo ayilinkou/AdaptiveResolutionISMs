@@ -8,6 +8,8 @@
 
 #include "imgui.h"
 
+#define UILAYER_CPP
+
 #include "UILayer.h"
 #include "AppLayer.h"
 #include "Core/Application/Application.h"
@@ -147,6 +149,8 @@ void UILayer::RenderLightingWindow()
 	ImGui::SliderFloat("Ambient Strength", &Core::LightManager::GetAmbientStrengthRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	ImGui::ColorEdit3("Skybox Color", reinterpret_cast<float*>(&Core::Renderer::Get()->GetClearColor()));
 	
+	ImGui::Dummy(ImVec2(0.f, 10.f));
+
 	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
 	const char* shadowTypeStrings[] = { "Shadow Map", "ISM" };
 	Core::ShadowType& shadowType = pAppLayer->GetShadowTypeRef();
@@ -156,7 +160,15 @@ void UILayer::RenderLightingWindow()
 	
 	if (shadowType == Core::ShadowType::ISM)
 	{
+		ImGui::SliderFloat("Spot Light Min Shadow Bias", &Core::LightManager::GetSpotLightMinBiasISMRef(), 0.0001f, 0.001f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SliderFloat("Spot Light Max Shadow Bias", &Core::LightManager::GetSpotLightMaxBiasISMRef(), 0.0001f, 0.001f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SliderFloat("Splat World Radius", &Core::RenderQueue::GetISMSplatWorldRadiusRef(), 0.01f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 		ImGui::SliderFloat("Push Coverage Threshold", &Core::RenderQueue::GetISMCoverageThresholdRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	}
+	else if (shadowType == Core::ShadowType::ShadowMap)
+	{
+		ImGui::SliderFloat("Spot Light Min Shadow Bias", &Core::LightManager::GetSpotLightMinBiasShadowMapRef(), 0.0001f, 0.001f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SliderFloat("Spot Light Max Shadow Bias", &Core::LightManager::GetSpotLightMaxBiasShadowMapRef(), 0.0001f, 0.001f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
 	}
 
 	ImGui::Separator();

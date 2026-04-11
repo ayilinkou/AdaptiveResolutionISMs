@@ -7,7 +7,6 @@
 
 static const float ISM_PIXEL_INVALID = 0.f;
 static const float ISM_PIXEL_VALID = 1.f;
-static const float ISM_SPLAT_WORLD_RADIUS = 0.1f;
 
 SamplerState pointSampler : register(s0);
 SamplerState linearSampler : register(s1);
@@ -24,6 +23,32 @@ struct SplatPixel
 	float bValid;
 	float coverage;
 };
+
+float pcf(int radius, uint shadowMapRes, float2 shadowUV, float bias, float currentDepth, uint lightIndex, Texture2DArray shadowMaps)
+{
+	// radius of 1 gives a 3x3 kernel
+	float2 texelSize = float2(1.f / (float)shadowMapRes, 1.f / (float)shadowMapRes);
+	float shadow = 0.f;
+	float sampleCount = 0.f;
+
+	[loop]
+	for (int y = -radius; y <= radius; ++y)
+	{
+		[loop]
+		for (int x = -radius; x <= radius; ++x)
+		{
+			float2 offset = float2(x, y) * texelSize;
+			float2 uv = shadowUV + offset;
+
+			float depth = shadowMaps.Sample(shadowSampler, float3(uv, lightIndex)).r;
+
+			shadow += depth > currentDepth - bias ? 1.f : 0.f;
+			sampleCount += 1.f;
+		}
+	}
+
+	return shadow / sampleCount;
+}
 
 float CalcBias(float minBias, float slopeBias, float3 worldNormal, float3 pixelToLight)
 {
@@ -56,10 +81,9 @@ float3 _CalcSpotLight(uint lightIndex, float3 pixelColor, float3 worldPos, float
 	shadowUV.x = lightNDC.x * 0.5f + 0.5f;
 	shadowUV.y = -lightNDC.y * 0.5f + 0.5f;
 	
-	float bias = CalcBias(0.00005f, 0.0005f, worldNormal, -spotLight.Dir); // this bias is not enough for ISMs
-	float depth = spotShadowMaps.Sample(shadowSampler, float3(shadowUV, lightIndex)).r;
-	
-	float shadow = depth > currentDepth - bias ? 1.f : 0.f;
+	float bias = CalcBias(spotLight.MinBias, spotLight.MaxBias, worldNormal, -spotLight.Dir);
+	float shadow = pcf(1, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotShadowMaps);
+
 	if (shadow <= 0.f)
 		return float3(0.f, 0.f, 0.f);
 
@@ -69,7 +93,7 @@ float3 _CalcSpotLight(uint lightIndex, float3 pixelColor, float3 worldPos, float
 
 	float3 halfwayVec = normalize(pixelToCam - spotLight.Dir);
 	float specularFactor = pow(saturate(dot(worldNormal, halfwayVec)), spotLight.SpecularPower);
-	float3 specular = float4(spotLight.Color, 1.f) * specularFactor * reflectance;
+	float3 specular = spotLight.Color * specularFactor * reflectance;
 	lightTotal += specular;
 	
 	return lightTotal * spotLight.Intensity * distAttenuation * coneAttenuation * shadow;
@@ -144,9 +168,8 @@ float3 _CalcDirectionalLight(uint lightIndex, float3 pixelColor, float3 worldPos
 	shadowUV.y = -lightNDC.y * 0.5f + 0.5f;
 	
 	float bias = CalcBias(0.0005f, 0.0001f, worldNormal, -dirLight.Dir);
-	float depth = dirShadowMaps.Sample(shadowSampler, float3(shadowUV, lightIndex)).r;
+	float shadow = pcf(1, dirLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, dirShadowMaps);
 	
-	float shadow = depth > currentDepth - bias ? 1.f : 0.f;
 	if (shadow <= 0.f)
 		return float3(0.f, 0.f, 0.f);
 
@@ -156,7 +179,7 @@ float3 _CalcDirectionalLight(uint lightIndex, float3 pixelColor, float3 worldPos
 
 	float3 halfwayVec = normalize(pixelToCam - dirLight.Dir);
 	float specularFactor = pow(saturate(dot(worldNormal, halfwayVec)), dirLight.SpecularPower);
-	float3 specular = float4(dirLight.Color, 1.f) * specularFactor * reflectance;
+	float3 specular = dirLight.Color * specularFactor * reflectance;
 	lightTotal += specular;
 	
 	return lightTotal * dirLight.Intensity * shadow;

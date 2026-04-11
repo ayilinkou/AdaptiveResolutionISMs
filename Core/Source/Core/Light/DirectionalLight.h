@@ -5,7 +5,7 @@
 #include "Light.h"
 #include "Core/Utility/Constants.h"
 
-namespace Core {
+namespace Core {	
 	struct DirectionalLightData
 	{
 		DirectX::XMFLOAT3 Color = { 1.f, 1.f, 1.f };
@@ -13,6 +13,8 @@ namespace Core {
 		DirectX::XMFLOAT3 Dir = { 0.f, -1.f, 0.f };
 		float Intensity = 1.f;
 		DirectX::XMMATRIX ViewProj;
+		UINT ShadowMapRes;
+		DirectX::XMFLOAT3 Padding;
 	};
 	
 	class DirectionalLight : public Light
@@ -35,6 +37,7 @@ namespace Core {
 		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>>& GetDSVs() { return s_DSVs; }
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetShadowMapsSRV() { return s_ShadowMapsSRV; }
 		static const D3D11_VIEWPORT& GetShadowMapViewport() { return s_ShadowMapViewport; }
+		static const UINT GetShadowMapRes() { return s_SHADOW_MAP_RES; }
 
 	private:
 		static void InitStatics();
@@ -46,9 +49,11 @@ namespace Core {
 		
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_ShadowMapsSRV;
 		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> s_DSVs;
-		static const D3D11_VIEWPORT s_ShadowMapViewport;
 		static const DirectX::XMMATRIX s_Proj;
 		static const DirectX::XMMATRIX s_ProjT;
+
+		static constexpr UINT s_SHADOW_MAP_RES = 1024u;
+		static constexpr D3D11_VIEWPORT s_ShadowMapViewport = { 0.f, 0.f, (float)s_SHADOW_MAP_RES, (float)s_SHADOW_MAP_RES, 0.f, 1.f };
 
 		friend class LightManager;
 	};

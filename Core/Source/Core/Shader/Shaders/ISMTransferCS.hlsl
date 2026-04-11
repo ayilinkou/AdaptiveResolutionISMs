@@ -14,7 +14,8 @@ cbuffer SplatBuffer : register(b1)
 	uint lightIndex;
 	float nearPlane;
 	float farPlane;
-	float padding;
+	float splatRadiusWorld;
+	float2 padding;
 };
 
 [numthreads(ISM_PULLPUSH_THREADS_X, ISM_PULLPUSH_THREADS_Y, 1)]
@@ -40,8 +41,11 @@ void main(uint3 id : SV_DispatchThreadID)
 		float viewZ = nearPlane + normalizedDepth * (farPlane - nearPlane);
 		
 		// min and max depth in view space
-		float minZ = max(nearPlane, viewZ - ISM_SPLAT_WORLD_RADIUS);
-		float maxZ = min(farPlane, viewZ + ISM_SPLAT_WORLD_RADIUS);
+		//float minZ = max(nearPlane, viewZ - splatRadiusWorld);
+		//float maxZ = min(farPlane, viewZ + splatRadiusWorld);
+		float delta = 0.000001f;
+		float minZ = max(nearPlane, viewZ - delta);
+		float maxZ = min(farPlane, viewZ + delta);
 		
 		// normalize
 		float minDepthNormalized = saturate((minZ - nearPlane) / (farPlane - nearPlane));
@@ -54,5 +58,5 @@ void main(uint3 id : SV_DispatchThreadID)
 		pixel.coverage = 1.f;
 	}	
 	
-	ismMipZero[uint3(texel, lightIndex)] = float4(pixel.minDepth, pixel.maxDepth, pixel.bValid, pixel.coverage);
+	ismMipZero[uint3(texel, 0u)] = float4(pixel.minDepth, pixel.maxDepth, pixel.bValid, pixel.coverage);
 }

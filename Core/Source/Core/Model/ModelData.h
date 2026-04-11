@@ -52,8 +52,6 @@ namespace Core {
 		void CreateBuffers();
 
 		void ProcessPointCloudVertices();
-		void AddPointCloudFace(const std::array<DirectX::XMFLOAT3, 3>& face, const std::vector<DirectX::XMMATRIX>& localTransforms);
-		std::vector<DirectX::XMFLOAT3> FaceToPointCloud(const std::array<DirectX::XMFLOAT3, 3>& face, float density);
 
 		void ReleaseIndexAndVertexArrays();
 
@@ -64,7 +62,6 @@ namespace Core {
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_PointCloudBuffer;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_PointCloudSRV;
 		UINT m_PointCloudCount;
-		float m_PointCloudDensity;
 
 		std::vector<Material> m_Materials;
 		std::vector<Mesh> m_Meshes;

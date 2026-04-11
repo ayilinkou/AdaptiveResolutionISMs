@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Light.h"
+#include "Core/Renderer/RenderQueue.h"
 
 namespace Core {
 	struct SpotLightData
@@ -17,8 +18,12 @@ namespace Core {
 		float CosInnerAngle;
 		float CosOuterAngle;
 		float NearZ;
-		DirectX::XMFLOAT2 Padding;
+		float MinBias;
+		float MaxBias;
 		DirectX::XMMATRIX ViewProj;
+		UINT ShadowMapRes;
+		UINT GlobalID;
+		DirectX::XMFLOAT2 Padding;
 	};
 
 	class SpotLight : public Light
@@ -34,6 +39,8 @@ namespace Core {
 		void SetAngles(float inner, float outer);
 		void SetAttenuation(float quadratic, float linear, float constant) { m_Data.Attenuation = { quadratic, linear, constant }; }
 		void SetAccumTransform(const DirectX::XMMATRIX& transform) { m_AccumTransform = transform; }
+		void SetShadowType(ShadowType newShadowType) { m_ShadowType = newShadowType; }
+		void SetShadowMapRes(UINT newShadowMapRes) { m_Data.ShadowMapRes = newShadowMapRes; }
 		virtual void SetColor(float r, float g, float b) override { m_Data.Color = { r, g, b }; }
 		virtual void SetSpecularPower(float power) override { m_Data.SpecularPower = power; }
 		virtual void SetIntensity(float intensity) { m_Data.Intensity = intensity; }
@@ -44,6 +51,9 @@ namespace Core {
 		const DirectX::XMMATRIX& GetViewProjT() const { return m_Data.ViewProj; }
 		float GetNearZ() const { return m_NearZ; }
 		float GetFarZ() const { return m_Data.Radius; }
+		ShadowType GetShadowType() const { return m_ShadowType; }
+		const UINT GetGlobalID() const { return m_Data.GlobalID; }
+
 		static const D3D11_VIEWPORT& GetShadowMapViewport() { return s_ShadowMapViewport; }
 		static const D3D11_VIEWPORT& GetISMViewport() { return s_ISMViewport; }
 		static constexpr UINT GetShadowMapRes() { return s_SHADOW_MAP_RES; }
@@ -78,9 +88,12 @@ namespace Core {
 		static std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>> s_ISM_UAVs;
 
 		static constexpr UINT s_SHADOW_MAP_RES = 512u;
-		static constexpr UINT s_ISM_RES = 128u;
+		static constexpr UINT s_ISM_RES = 256u;
 		static constexpr D3D11_VIEWPORT s_ShadowMapViewport = { 0.f, 0.f, (float)s_SHADOW_MAP_RES, (float)s_SHADOW_MAP_RES, 0.f, 1.f };
 		static constexpr D3D11_VIEWPORT s_ISMViewport = { 0.f, 0.f, (float)s_ISM_RES, (float)s_ISM_RES, 0.f, 1.f };
+		static UINT s_GlobalID;
+
+		ShadowType m_ShadowType = ShadowType::ShadowMap;
 
 		friend class LightManager;
 	};

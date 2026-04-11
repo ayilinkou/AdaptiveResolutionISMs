@@ -1,4 +1,5 @@
 #include "AppLayer.h"
+#include "Scenes.h"
 #include "Core/Application/Application.h"
 #include "Core/Renderer/Renderer.h"
 #include "Core/Utility/Timer.h"
@@ -55,12 +56,23 @@ void AppLayer::OnRender(double dt)
 	}
 }
 
-void AppLayer::LoadScene(const std::string& modelPath, const std::string& texturesRoot)
+void AppLayer::LoadScene(const SceneInfo& scene)
 {
-	Core::Renderer::Get()->ResetClearColor();
+	Core::Renderer* pRenderer = Core::Renderer::Get();
+	pRenderer->ResetClearColor();
+
+	if (scene.PointCloudDensity > 0.f)
+	{
+		pRenderer->SetPointCloudDensity(scene.PointCloudDensity);
+	}
+	else
+	{
+		pRenderer->ResetPointCloudDensity();
+	}
+
 	m_Models.clear();
 	m_Lights.clear();
-	m_Models.emplace_back(std::make_unique<Core::Model>(modelPath, texturesRoot));
+	m_Models.emplace_back(std::make_unique<Core::Model>(scene.ModelPath, scene.TexturesRoot));
 }
 
 void AppLayer::AddLight(std::unique_ptr<Core::Light>&& light)

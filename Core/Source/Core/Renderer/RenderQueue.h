@@ -41,7 +41,8 @@ namespace Core
 			UINT LightIndex;
 			float NearPlane;
 			float FarPlane;
-			DirectX::XMFLOAT3 Padding;
+			float SplatRadiusWorld;
+			DirectX::XMFLOAT2 Padding;
 		};
 
 		struct PullPushBufferData
@@ -61,6 +62,7 @@ namespace Core
 		void RenderLightingPass(ShadowType shadowType);
 
 		static float& GetISMCoverageThresholdRef() { return s_ISMCoverageThreshold; }
+		static float& GetISMSplatWorldRadiusRef() { return s_ISMSplatWorldRadius; }
 
 	private:
 		void Init();
@@ -83,6 +85,7 @@ namespace Core
 		void DispatchISMTransfer(const UINT ismRes);
 		void DispatchISMPull(const UINT ismRes, const UINT lightIndex);
 		void DispatchISMPush(const UINT ismRes, const UINT lightIndex);
+		void DispatchISMRanking();
 
 	private:
 		std::unordered_map<ModelData*, std::vector<DirectX::XMMATRIX>> m_ModelWorldTransformsMapT;
@@ -96,15 +99,20 @@ namespace Core
 
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_ISMSplatCBuffer;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_ISMPullPushCBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_LightScoresBuffer;
 
 		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_ISMDepthUAV;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_ISMDepthSRV;
+
+		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_LightScoresUAV;
 
 		std::unique_ptr<ShaderProgram> m_IsmSplatShaderProgram;
 		std::unique_ptr<ShaderProgram> m_IsmTransferShaderProgram;
 		std::unique_ptr<ShaderProgram> m_IsmPullShaderProgram;
 		std::unique_ptr<ShaderProgram> m_IsmPushShaderProgram;
+		std::unique_ptr<ShaderProgram> m_IsmRankingShaderProgram;
 
 		static float s_ISMCoverageThreshold;
+		static float s_ISMSplatWorldRadius;
 	};
 }

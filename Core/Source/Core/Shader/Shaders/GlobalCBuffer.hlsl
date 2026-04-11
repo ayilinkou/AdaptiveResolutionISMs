@@ -35,8 +35,12 @@ struct SpotLight
 	float CosInnerAngle;
 	float CosOuterAngle;
 	float NearZ;
-	float2 Padding;
+	float MinBias;
+	float MaxBias;
 	float4x4 ViewProj;
+	uint ShadowMapRes;
+	uint GlobalID;
+	float2 Padding;
 };
 
 struct DirectionalLight
@@ -46,6 +50,8 @@ struct DirectionalLight
 	float3 Dir;
 	float Intensity;
 	float4x4 ViewProj;
+	uint ShadowMapRes;
+	float3 Padding;
 };
 
 struct LightData

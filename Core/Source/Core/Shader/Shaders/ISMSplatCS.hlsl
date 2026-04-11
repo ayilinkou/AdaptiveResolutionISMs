@@ -14,7 +14,8 @@ cbuffer SplatBuffer : register(b1)
 	uint lightIndex;
 	float nearPlane;
 	float farPlane;
-	float padding;
+	float splatRadiusWorld;
+	float2 padding;
 };
 
 [numthreads(ISM_SPLAT_THREADS_X, 1, 1)]
@@ -36,7 +37,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	float3 ndc = clipPos.xyz / clipPos.w; // bottom = -1, top = 1
 	
 	float projScale = lightProj._11;
-	float texelRadius = ISM_SPLAT_WORLD_RADIUS * projScale / max(depth, 0.0001f) * (float)shadowRes * 0.5f;
+	float texelRadius = splatRadiusWorld * projScale / max(depth, 0.0001f) * (float)shadowRes * 0.5f;
 	int radius = (int)clamp(texelRadius, 1.f, 20.f); // TODO: maybe try without clamping?
 	
 	// frustum culling
