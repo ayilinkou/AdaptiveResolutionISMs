@@ -8,6 +8,8 @@
 #include "Core/Light/LightManager.h"
 
 namespace Core {
+	float RenderQueue::s_ISMCoverageThreshold = 0.25f;
+
 	RenderQueue::RenderQueue()
 	{
 		Init();
@@ -20,6 +22,20 @@ namespace Core {
 		ShaderProgramDesc desc = {};
 		desc.Compute.Filepath = "../Core/Source/Core/Shader/Shaders/ISMSplatCS.hlsl";
 		m_IsmSplatShaderProgram = std::make_unique<ShaderProgram>(desc);
+
+		desc = {};
+		desc.Compute.Filepath = "../Core/Source/Core/Shader/Shaders/ISMTransferCS.hlsl";
+		m_IsmTransferShaderProgram = std::make_unique<ShaderProgram>(desc);
+
+		desc = {};
+		desc.Compute.Filepath = "../Core/Source/Core/Shader/Shaders/ISMPullPushCS.hlsl";
+		desc.Compute.Entry = "Pull";
+		m_IsmPullShaderProgram = std::make_unique<ShaderProgram>(desc);
+
+		desc = {};
+		desc.Compute.Filepath = "../Core/Source/Core/Shader/Shaders/ISMPullPushCS.hlsl";
+		desc.Compute.Entry = "Push";
+		m_IsmPushShaderProgram = std::make_unique<ShaderProgram>(desc);
 	}
 	
 	void RenderQueue::Add(Model* pModel)
@@ -104,7 +120,7 @@ namespace Core {
 			case Core::ShadowType::ISM:
 			{
 				shadowSRVs[0] = DirectionalLight::GetShadowMapsSRV().Get(); // TODO: do I want to do these too or just spot lights are enough?
-				shadowSRVs[1] = SpotLight::GetISM_SRV().Get();
+				shadowSRVs[1] = SpotLight::GetISMMipSRVs()[0].Get();
 				shadowSRVs[2] = PointLight::GetShadowMapsSRV().Get(); // TODO: do I want to do these too or just spot lights are enough?
 				break;
 			}
@@ -289,14 +305,17 @@ namespace Core {
 	void RenderQueue::ISMPass()
 	{
 		ID3D11DeviceContext* pContext = Core::Renderer::Get()->GetContext().Get();
-		pContext->CSSetConstantBuffers(1u, 1u, m_ISMSplatCBuffer.GetAddressOf());
-		
+		ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
+		ID3D11ShaderResourceView* nullSRVs[] = { nullptr };
+
+		std::vector<SpotLight*> activeSpotLights;
 		const auto& spotLights = LightManager::GetSpotLights();
 		if (!spotLights.empty())
 		{
+			pContext->CSSetConstantBuffers(1u, 1u, m_ISMSplatCBuffer.GetAddressOf());
 			pContext->RSSetViewports(1u, &SpotLight::GetISMViewport());
 			const auto& spotUAVs = SpotLight::GetISM_UAVs();
-			UINT activeSpotLightCount = 0u;
+			constexpr UINT ISMRes = SpotLight::GetISM_Res();
 			UINT spotLightCount = min((UINT)spotLights.size(), MAX_SPOT_LIGHT_COUNT);
 			for (UINT i = 0u; i < spotLightCount; i++)
 			{
@@ -304,35 +323,136 @@ namespace Core {
 				if (!spotLight->IsActive())
 					continue;
 
-				auto& uav = spotUAVs[activeSpotLightCount];
+				const UINT clearValuesUint[4] = { 0xFFFFFFFF, 0u, 0u, 0u };
+				pContext->ClearUnorderedAccessViewUint(m_ISMDepthUAV.Get(), clearValuesUint);
+				pContext->CSSetUnorderedAccessViews(0u, 1u, m_ISMDepthUAV.GetAddressOf(), nullptr);
+				auto& uavs = spotUAVs[activeSpotLights.size()];
+				
+				// I believe I don't actually have to clear this since they get overridden in a fullscreen pass during transfer
+				/*for (const auto& uav : uavs)
+				{
+					const float clearValuesFloat[4] = { 1.f, 1.f, 0.f, 0.f };
+					pContext->ClearUnorderedAccessViewFloat(uav.Get(), clearValuesFloat);
+				}*/
 
-				float clearValues[2] = { 0.f, 0.f };
-				pContext->ClearUnorderedAccessViewFloat(uav.Get(), clearValues);
-				pContext->CSSetUnorderedAccessViews(0u, 1u, uav.GetAddressOf(), nullptr);
-				pContext->CSSetShader(m_IsmSplatShaderProgram->GetComputeShader(), nullptr, 0u);
+				DispatchISMSplat(
+					spotLight->GetViewT(),
+					spotLight->GetProjT(),
+					ISMRes,
+					(UINT)activeSpotLights.size(),
+					spotLight->GetNearZ(),
+					spotLight->GetFarZ()
+				);
 
-				DispatchISMSplat(spotLight->GetViewT(), spotLight->GetProjT(), SpotLight::GetISM_Res(), activeSpotLightCount);
-				activeSpotLightCount++;
+				pContext->CSSetUnorderedAccessViews(0u, 1u, uavs[0].GetAddressOf(), nullptr);
+				pContext->CSSetShaderResources(0u, 1u, m_ISMDepthSRV.GetAddressOf());
+				DispatchISMTransfer(ISMRes);
+				pContext->CSSetShaderResources(0u, 1u, nullSRVs);
+				
+				activeSpotLights.push_back(spotLight);
 			}
 		}
 
-		ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
+		pContext->CSSetUnorderedAccessViews(0u, 1u, nullUAVs, nullptr);
+		
+		if (!activeSpotLights.empty())
+		{
+			pContext->CSSetConstantBuffers(1u, 1u, m_ISMPullPushCBuffer.GetAddressOf());
+			for (UINT i = 0u; i < (UINT)activeSpotLights.size(); i++)
+			{
+				DispatchISMPull(SpotLight::GetISM_Res(), i);
+			}
+		}
+
+		if (!activeSpotLights.empty())
+		{
+			for (UINT i = 0u; i < (UINT)activeSpotLights.size(); i++)
+			{
+				DispatchISMPush(SpotLight::GetISM_Res(), i);
+			}
+		}
+
+		pContext->CSSetShaderResources(0u, 1u, nullSRVs);
 		pContext->CSSetUnorderedAccessViews(0u, 1u, nullUAVs, nullptr);
 	}
 
-	void RenderQueue::DispatchISMSplat(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, const UINT ismRes, const UINT lightIndex)
+	void RenderQueue::DispatchISMSplat(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, const UINT ismRes, const UINT lightIndex,
+		const float nearPlane, const float farPlane)
 	{
 		ID3D11DeviceContext* pContext = Core::Renderer::Get()->GetContext().Get();
-		
+		pContext->CSSetShader(m_IsmSplatShaderProgram->GetComputeShader(), nullptr, 0u);
+
 		for (const auto& [pModelData, modelWorldTransformsT] : m_ModelWorldTransformsMapT)
 		{
 			// point cloud is guaranteed to only contain points for opaque meshes so no need to check here
 			UINT pointCount = pModelData->GetPointCloudCount();
-			UpdateSplatCBuffer(viewT, projT, pointCount, ismRes, lightIndex);
+			UpdateSplatCBuffer(viewT, projT, pointCount, ismRes, lightIndex, nearPlane, farPlane);
 			pContext->CSSetShaderResources(0u, 1u, pModelData->GetPointCloudSRV().GetAddressOf());
 
-			const UINT groupsX = (ismRes + ISM_SPLAT_THREADS_X - 1) / ISM_SPLAT_THREADS_X;
-			const UINT groupsY = (ismRes + ISM_SPLAT_THREADS_Y - 1) / ISM_SPLAT_THREADS_Y;
+			// TODO: assert that all points can be drawn in a single compute dispatch
+			const UINT groupsX = (UINT)std::ceil((double)pointCount / (double)ISM_SPLAT_THREADS_X);
+			pContext->Dispatch(groupsX, 1u, 1u);
+		}
+	}
+
+	void RenderQueue::DispatchISMTransfer(const UINT ismRes)
+	{
+		ID3D11DeviceContext* pContext = Core::Renderer::Get()->GetContext().Get();
+		pContext->CSSetShader(m_IsmTransferShaderProgram->GetComputeShader(), nullptr, 0u);
+
+		const UINT groupsX = (ismRes + ISM_PULLPUSH_THREADS_X - 1) / ISM_PULLPUSH_THREADS_X;
+		const UINT groupsY = (ismRes + ISM_PULLPUSH_THREADS_Y - 1) / ISM_PULLPUSH_THREADS_Y;
+		pContext->Dispatch(groupsX, groupsY, 1u);
+	}
+
+	void RenderQueue::DispatchISMPull(const UINT ismRes, const UINT lightIndex)
+	{
+		ID3D11DeviceContext* pContext = Core::Renderer::Get()->GetContext().Get();
+		pContext->CSSetShader(m_IsmPullShaderProgram->GetComputeShader(), nullptr, 0u);
+
+		const auto& spotUAVs = SpotLight::GetISM_UAVs()[lightIndex];
+		const UINT pullCycles = (UINT)spotUAVs.size() - 1u;
+		ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
+
+		for (UINT i = 0; i < pullCycles; i++)
+		{
+			UINT destMipRes = ismRes / (UINT)pow(2.f, (float)i + 1.f);
+
+			UpdatePullPushCBuffer(lightIndex, destMipRes, ismRes);
+
+			pContext->CSSetUnorderedAccessViews(0u, 1u, nullUAVs, nullptr);
+			pContext->CSSetShaderResources(0u, 1u, SpotLight::GetISMMipSRVs()[i].GetAddressOf());
+			pContext->CSSetUnorderedAccessViews(0u, 1u, spotUAVs[i + 1u].GetAddressOf(), nullptr);
+
+			const UINT groupsX = (destMipRes + ISM_PULLPUSH_THREADS_X - 1) / ISM_PULLPUSH_THREADS_X;
+			const UINT groupsY = (destMipRes + ISM_PULLPUSH_THREADS_Y - 1) / ISM_PULLPUSH_THREADS_Y;
+			pContext->Dispatch(groupsX, groupsY, 1u);
+		}
+	}
+
+	void RenderQueue::DispatchISMPush(const UINT ismRes, const UINT lightIndex)
+	{
+		ID3D11DeviceContext* pContext = Core::Renderer::Get()->GetContext().Get();
+		pContext->CSSetShader(m_IsmPushShaderProgram->GetComputeShader(), nullptr, 0u);
+
+		const auto& spotUAVs = SpotLight::GetISM_UAVs()[lightIndex];
+		const UINT pushCycles = (UINT)spotUAVs.size() - 1u;
+		ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
+		ID3D11ShaderResourceView* nullSRVs[] = { nullptr };
+		pContext->CSSetUnorderedAccessViews(0u, 1u, nullUAVs, nullptr);
+		pContext->CSSetShaderResources(0u, 1u, nullSRVs);
+
+		for (UINT i = 0; i < pushCycles; i++)
+		{
+			UINT destMipRes = 1 << (i + 1);
+
+			UpdatePullPushCBuffer(lightIndex, destMipRes, ismRes);
+			pContext->CSSetUnorderedAccessViews(0u, 1u, nullUAVs, nullptr);
+			pContext->CSSetShaderResources(0u, 1u, SpotLight::GetISMMipSRVs()[pushCycles - i].GetAddressOf());
+			pContext->CSSetUnorderedAccessViews(0u, 1u, spotUAVs[pushCycles - i - 1u].GetAddressOf(), nullptr);
+
+			const UINT groupsX = (destMipRes + ISM_PULLPUSH_THREADS_X - 1) / ISM_PULLPUSH_THREADS_X;
+			const UINT groupsY = (destMipRes + ISM_PULLPUSH_THREADS_Y - 1) / ISM_PULLPUSH_THREADS_Y;
 			pContext->Dispatch(groupsX, groupsY, 1u);
 		}
 	}
@@ -359,6 +479,41 @@ namespace Core {
 
 		ASSERT_NOT_FAILED(pDevice->CreateBuffer(&desc, nullptr, &m_ISMSplatCBuffer));
 		NAME_D3D_RESOURCE(m_ISMSplatCBuffer, "RenderQueue ISM splat constant buffer");
+
+		desc.ByteWidth = sizeof(PullPushBufferData);
+
+		ASSERT_NOT_FAILED(pDevice->CreateBuffer(&desc, nullptr, &m_ISMPullPushCBuffer));
+		NAME_D3D_RESOURCE(m_ISMPullPushCBuffer, "RenderQueue ISM pull push constant buffer");
+
+		D3D11_TEXTURE2D_DESC texDesc = {};
+		texDesc.Width = SpotLight::GetISM_Res();
+		texDesc.Height = SpotLight::GetISM_Res();
+		texDesc.Usage = D3D11_USAGE_DEFAULT;
+		texDesc.Format = DXGI_FORMAT_R32_UINT;
+		texDesc.ArraySize = 1u;
+		texDesc.MipLevels = 1u;
+		texDesc.SampleDesc.Count = 1u;
+		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> ISMDepthTex;
+		ASSERT_NOT_FAILED(pDevice->CreateTexture2D(&texDesc, nullptr, &ISMDepthTex));
+		NAME_D3D_RESOURCE(ISMDepthTex, "Render queue ISM depth texture");
+
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+		uavDesc.Format = DXGI_FORMAT_R32_UINT;
+		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+		uavDesc.Texture2D.MipSlice = 0u;
+
+		ASSERT_NOT_FAILED(pDevice->CreateUnorderedAccessView(ISMDepthTex.Get(), &uavDesc, &m_ISMDepthUAV));
+		NAME_D3D_RESOURCE(m_ISMDepthUAV, "Render queue ISM depth UAV");
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Format = DXGI_FORMAT_R32_UINT;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2DArray.MipLevels = 1u;
+
+		ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(ISMDepthTex.Get(), &srvDesc, &m_ISMDepthSRV));
+		NAME_D3D_RESOURCE(m_ISMDepthSRV, "Render queue ISM depth SRV ");
 	}
 
 	void RenderQueue::UpdateLocalCBuffer(const std::vector<DirectX::XMMATRIX>& modelLocalTransformsT)
@@ -370,7 +525,7 @@ namespace Core {
 		ASSERT_NOT_FAILED(pContext->Map(m_ModelLocalCBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mappedResource));
 		ModelLocalBufferData* localBufferPtr = (ModelLocalBufferData*)mappedResource.pData;
 		localBufferPtr->ModelLocalCount = (UINT)modelLocalTransformsT.size();
-		memcpy(&localBufferPtr->modelLocalTransforms, modelLocalTransformsT.data(), sizeof(DirectX::XMMATRIX) * modelLocalTransformsT.size());
+		memcpy(&localBufferPtr->ModelLocalTransforms, modelLocalTransformsT.data(), sizeof(DirectX::XMMATRIX) * modelLocalTransformsT.size());
 		pContext->Unmap(m_ModelLocalCBuffer.Get(), 0u);
 	}
 
@@ -386,7 +541,7 @@ namespace Core {
 	}
 
 	void RenderQueue::UpdateSplatCBuffer(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, UINT pointCount, UINT shadowRes,
-		const UINT lightIndex)
+		const UINT lightIndex, const float nearPlane, const float farPlane)
 	{
 		HRESULT hResult;
 		ID3D11DeviceContext* pContext = Renderer::Get()->GetContext().Get();
@@ -399,6 +554,23 @@ namespace Core {
 		ptr->PointCount = pointCount;
 		ptr->ShadowRes = shadowRes;
 		ptr->LightIndex = lightIndex;
+		ptr->NearPlane = nearPlane;
+		ptr->FarPlane = farPlane;
 		pContext->Unmap(m_ISMSplatCBuffer.Get(), 0u);
+	}
+
+	void RenderQueue::UpdatePullPushCBuffer(const UINT lightIndex, const UINT destMipRes, const UINT ismRes)
+	{
+		HRESULT hResult;
+		ID3D11DeviceContext* pContext = Renderer::Get()->GetContext().Get();
+		D3D11_MAPPED_SUBRESOURCE mappedResource = {};
+
+		ASSERT_NOT_FAILED(pContext->Map(m_ISMPullPushCBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mappedResource));
+		PullPushBufferData* ptr = (PullPushBufferData*)mappedResource.pData;
+		ptr->LightIndex = lightIndex;
+		ptr->DestMipRes = destMipRes;
+		ptr->ShadowRes = ismRes;
+		ptr->CoverageThreshold = s_ISMCoverageThreshold;
+		pContext->Unmap(m_ISMPullPushCBuffer.Get(), 0u);
 	}
 }

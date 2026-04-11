@@ -21,8 +21,8 @@ inline DirectX::XMVECTOR ComputeSafeUpVector(const DirectX::XMVECTOR& dir)
 namespace Core {
 	std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> SpotLight::s_ShadowMapDSVs;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SpotLight::s_ShadowMapsSRV;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>> SpotLight::s_ISM_UAVs;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SpotLight::s_ISM_SRV;
+	std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>> SpotLight::s_ISM_UAVs;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> SpotLight::s_ISMMipSRVs;
 
 	SpotLight::SpotLight(DirectX::XMFLOAT3 color, DirectX::XMFLOAT3 attenuation, DirectX::XMFLOAT3 dir)
 		: m_LocalPosition({ 0.f, 0.f, 0.f })
@@ -30,6 +30,7 @@ namespace Core {
 		m_Data.Color = color;
 		m_Data.Attenuation = attenuation;
 		m_Data.Direction = dir;
+		m_Data.NearZ = m_NearZ;
 		m_Name = "Spot Light";
 		UpdateView();
 		UpdateProj();
@@ -86,11 +87,11 @@ namespace Core {
 		NAME_D3D_RESOURCE(s_ShadowMapsSRV, "Spot light shadow maps SRV");
 
 		// ISMs
-		UINT ismMipCount = 1u; // TODO: will change this when need pull push algorithm
+		UINT ismMipCount = (UINT)log2((float)s_ISMViewport.Width) + 1u;
 		Microsoft::WRL::ComPtr<ID3D11Texture2D> ISMTextureArray;
 		texDesc.Width = (UINT)s_ISMViewport.Width;
 		texDesc.Height = (UINT)s_ISMViewport.Height;
-		texDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+		texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		texDesc.ArraySize = MAX_SPOT_LIGHT_COUNT;
 		texDesc.MipLevels = ismMipCount; 
 		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
@@ -101,28 +102,40 @@ namespace Core {
 		for (UINT i = 0u; i < MAX_SPOT_LIGHT_COUNT; i++)
 		{
 			D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-			uavDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+			uavDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 			uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
 			uavDesc.Texture2DArray.ArraySize = 1u;
 			uavDesc.Texture2DArray.FirstArraySlice = i;
 
-			Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> uav;
-			ASSERT_NOT_FAILED(pDevice->CreateUnorderedAccessView(ISMTextureArray.Get(), &uavDesc, &uav));
-			NAME_D3D_RESOURCE(uav, (std::string("Spot light ISM UAV ") + std::to_string(i)).c_str());
-			s_ISM_UAVs.push_back(uav);
+			std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>> mips;
+			for (UINT mip = 0u; mip < ismMipCount; mip++)
+			{
+				uavDesc.Texture2DArray.MipSlice = mip;
+
+				Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> uav;
+				ASSERT_NOT_FAILED(pDevice->CreateUnorderedAccessView(ISMTextureArray.Get(), &uavDesc, &uav));
+				NAME_D3D_RESOURCE(uav, (std::string("Spot light ISM UAV ") + std::to_string(i) + " mip " + std::to_string(mip)).c_str());
+				mips.push_back(uav);
+			}
+			s_ISM_UAVs.push_back(mips);
 		}
 
-		srvDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
-		srvDesc.Texture2DArray.MipLevels = ismMipCount;
-		ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(ISMTextureArray.Get(), &srvDesc, &s_ISM_SRV));
-		NAME_D3D_RESOURCE(s_ISM_SRV, "Spot light ISMs SRV");
+		s_ISMMipSRVs.resize(ismMipCount);
+		srvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		srvDesc.Texture2DArray.MipLevels = 1u;
+		for (UINT mip = 0u; mip < ismMipCount; mip++)
+		{
+			srvDesc.Texture2DArray.MostDetailedMip = mip;
+			ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(ISMTextureArray.Get(), &srvDesc, &s_ISMMipSRVs[mip]));
+			NAME_D3D_RESOURCE(s_ISMMipSRVs[mip], (std::string("Spot light ISMs SRV mip ") + std::to_string(mip)).c_str());
+		}
 	}
 
 	void SpotLight::ShutdownStatics()
 	{
 		s_ShadowMapsSRV.Reset();
 		s_ShadowMapDSVs.clear();
-		s_ISM_SRV.Reset();
+		s_ISMMipSRVs.clear();
 		s_ISM_UAVs.clear();
 	}
 
@@ -213,7 +226,7 @@ namespace Core {
 
 	void SpotLight::UpdateProj()
 	{
-		m_Proj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(m_ConeOuterAngle), 1.f, 0.1f, m_Data.Radius);
+		m_Proj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(m_ConeOuterAngle), 1.f, m_NearZ, m_Data.Radius);
 		UpdateViewProj();
 	}
 

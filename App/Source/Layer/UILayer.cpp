@@ -14,6 +14,7 @@
 #include "Core/Utility/Utility.h"
 #include "Core/Light/LightManager.h"
 #include "Core/Light/Light.h"
+#include "Core/Renderer/RenderQueue.h"
 #include "Scenes.h"
 
 int UILayer::s_SelectedId = -1;
@@ -153,6 +154,11 @@ void UILayer::RenderLightingWindow()
 	if (ImGui::Combo("Shadow Type", &currentShadowType, shadowTypeStrings, IM_ARRAYSIZE(shadowTypeStrings)))
 		shadowType = static_cast<Core::ShadowType>(currentShadowType);
 	
+	if (shadowType == Core::ShadowType::ISM)
+	{
+		ImGui::SliderFloat("Push Coverage Threshold", &Core::RenderQueue::GetISMCoverageThresholdRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	}
+
 	ImGui::Separator();
 
 	auto& lights = Core::LightManager::GetLights();

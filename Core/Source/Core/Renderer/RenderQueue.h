@@ -35,7 +35,7 @@ namespace Core
 		{
 			UINT ModelLocalCount;
 			DirectX::XMFLOAT3 Padding;
-			DirectX::XMMATRIX modelLocalTransforms[MAX_MODEL_LOCAL_COUNT];
+			DirectX::XMMATRIX ModelLocalTransforms[MAX_MODEL_LOCAL_COUNT];
 		};
 
 		struct SplatBufferData
@@ -45,7 +45,17 @@ namespace Core
 			UINT PointCount;
 			UINT ShadowRes;
 			UINT LightIndex;
-			float Padding;
+			float NearPlane;
+			float FarPlane;
+			DirectX::XMFLOAT3 Padding;
+		};
+
+		struct PullPushBufferData
+		{
+			UINT LightIndex;
+			UINT DestMipRes;
+			UINT ShadowRes;
+			float CoverageThreshold;
 		};
 
 	public:
@@ -54,6 +64,8 @@ namespace Core
 		void PopulateRenderQueue();
 		void RenderMainPass(ShadowType shadowType);
 		void RenderShadowPass(ShadowType shadowType);
+
+		static float& GetISMCoverageThresholdRef() { return s_ISMCoverageThreshold; }
 
 	private:
 		void Init();
@@ -64,13 +76,18 @@ namespace Core
 		void UpdateLocalCBuffer(const std::vector<DirectX::XMMATRIX>& modelLocalTransformsT);
 		void UpdateWorldCBuffer(const std::vector<DirectX::XMMATRIX>& modelWorldTransformsT);
 		void UpdateSplatCBuffer(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, const UINT pointCount,
-			const UINT shadowRes, const UINT lightIndex);
+			const UINT shadowRes, const UINT lightIndex, const float nearPlane, const float farPlane);
+		void UpdatePullPushCBuffer(const UINT lightIndex, const UINT destMipRes, const UINT ismRes);
 		
 		void Add(Model* pModel);
 
 		void ShadowMapPass();
 		void ISMPass();
-		void DispatchISMSplat(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, const UINT ismRes, const UINT lightIndex);
+		void DispatchISMSplat(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, const UINT ismRes, const UINT lightIndex,
+			const float nearPlane, const float farPlane);
+		void DispatchISMTransfer(const UINT ismRes);
+		void DispatchISMPull(const UINT ismRes, const UINT lightIndex);
+		void DispatchISMPush(const UINT ismRes, const UINT lightIndex);
 
 	private:
 		std::unordered_map<ModelData*, std::vector<DirectX::XMMATRIX>> m_ModelWorldTransformsMapT;
@@ -83,7 +100,16 @@ namespace Core
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_ModelWorldCBuffer;
 
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_ISMSplatCBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_ISMPullPushCBuffer;
+
+		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_ISMDepthUAV;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_ISMDepthSRV;
 
 		std::unique_ptr<ShaderProgram> m_IsmSplatShaderProgram;
+		std::unique_ptr<ShaderProgram> m_IsmTransferShaderProgram;
+		std::unique_ptr<ShaderProgram> m_IsmPullShaderProgram;
+		std::unique_ptr<ShaderProgram> m_IsmPushShaderProgram;
+
+		static float s_ISMCoverageThreshold;
 	};
 }

@@ -29,7 +29,8 @@ struct SpotLight
 	float3 Dir;
 	float CosInnerAngle;
 	float CosOuterAngle;
-	float3 Padding;
+	float NearZ;
+	float2 Padding;
 	float4x4 ViewProj;
 };
 

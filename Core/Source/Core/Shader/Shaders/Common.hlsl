@@ -1,11 +1,25 @@
 #include "GlobalCBuffer.hlsl"
 
+#define FLT_MAX 3.402823466e+38
+
+static const float ISM_PIXEL_INVALID = 0.f;
+static const float ISM_PIXEL_VALID = 1.f;
+static const float ISM_SPLAT_WORLD_RADIUS = 0.1f;
+
 SamplerState linearSampler : register(s0);
 SamplerState shadowSampler : register(s1);
 
 Texture2DArray dirShadowMaps : register(t3);
 Texture2DArray spotShadowMaps : register(t4);
 TextureCubeArray pointShadowMaps : register(t5);
+
+struct SplatPixel
+{
+	float minDepth;
+	float maxDepth;
+	float bValid;
+	float coverage;
+};
 
 float CalcBias(float minBias, float slopeBias, float3 worldNormal, float3 pixelToLight)
 {
@@ -38,7 +52,7 @@ float3 _CalcSpotLight(uint lightIndex, float3 pixelColor, float3 worldPos, float
 	shadowUV.x = lightNDC.x * 0.5f + 0.5f;
 	shadowUV.y = -lightNDC.y * 0.5f + 0.5f;
 	
-	float bias = CalcBias(0.000005f, 0.0005f, worldNormal, -spotLight.Dir);
+	float bias = CalcBias(0.00005f, 0.0005f, worldNormal, -spotLight.Dir); // this bias is not enough for ISMs
 	float depth = spotShadowMaps.Sample(shadowSampler, float3(shadowUV, lightIndex)).r;
 	
 	float shadow = depth > currentDepth - bias ? 1.f : 0.f;
@@ -151,5 +165,14 @@ float3 CalcDirectionalLights(float3 pixelColor, float3 worldPos, float3 worldNor
 	{
 		totalLight += _CalcDirectionalLight(i, pixelColor, worldPos, worldNormal, pixelToCam, reflectance);
 	}
+	return totalLight;
+}
+
+float3 CalcLight(float3 pixelColor, float3 worldPos, float3 worldNormal, float3 pixelToCam, float reflectance)
+{
+	float3 totalLight = float3(0.f, 0.f, 0.f);
+	totalLight += CalcSpotLights(pixelColor, worldPos, worldNormal, pixelToCam, reflectance);
+	totalLight += CalcPointLights(pixelColor, worldPos, worldNormal, pixelToCam, reflectance);
+	totalLight += CalcDirectionalLights(pixelColor, worldPos, worldNormal, pixelToCam, reflectance);
 	return totalLight;
 }

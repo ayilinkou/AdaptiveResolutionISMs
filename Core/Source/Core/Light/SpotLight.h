@@ -16,7 +16,8 @@ namespace Core {
 		DirectX::XMFLOAT3 Direction = { 0.f, -1.f, 0.f };
 		float CosInnerAngle;
 		float CosOuterAngle;
-		DirectX::XMFLOAT3 Padding;
+		float NearZ;
+		DirectX::XMFLOAT2 Padding;
 		DirectX::XMMATRIX ViewProj;
 	};
 
@@ -41,14 +42,16 @@ namespace Core {
 		const DirectX::XMMATRIX GetViewT() const { return DirectX::XMMatrixTranspose(m_View); }
 		const DirectX::XMMATRIX GetProjT() const { return DirectX::XMMatrixTranspose(m_Proj); }
 		const DirectX::XMMATRIX& GetViewProjT() const { return m_Data.ViewProj; }
+		float GetNearZ() const { return m_NearZ; }
+		float GetFarZ() const { return m_Data.Radius; }
 		static const D3D11_VIEWPORT& GetShadowMapViewport() { return s_ShadowMapViewport; }
 		static const D3D11_VIEWPORT& GetISMViewport() { return s_ISMViewport; }
 		static constexpr UINT GetShadowMapRes() { return s_SHADOW_MAP_RES; }
 		static constexpr UINT GetISM_Res() { return s_ISM_RES; }
 		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>>& GetShadowMapDSVs() { return s_ShadowMapDSVs; }
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetShadowMapsSRV() { return s_ShadowMapsSRV; }
-		static std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>& GetISM_UAVs() { return s_ISM_UAVs; }
-		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetISM_SRV() { return s_ISM_SRV; }
+		static std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>>& GetISM_UAVs() { return s_ISM_UAVs; }
+		static std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> GetISMMipSRVs() { return s_ISMMipSRVs; }
 
 	private:
 		static void InitStatics();
@@ -67,14 +70,15 @@ namespace Core {
 		DirectX::XMMATRIX m_Proj;
 		float m_ConeInnerAngle = 60.f;
 		float m_ConeOuterAngle = 89.f;
+		const float m_NearZ = 0.1f;
 
 		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_ShadowMapsSRV;
 		static std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> s_ShadowMapDSVs;
-		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> s_ISM_SRV;
-		static std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>> s_ISM_UAVs;
+		static std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> s_ISMMipSRVs;
+		static std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>> s_ISM_UAVs;
 
 		static constexpr UINT s_SHADOW_MAP_RES = 512u;
-		static constexpr UINT s_ISM_RES = 256u;
+		static constexpr UINT s_ISM_RES = 128u;
 		static constexpr D3D11_VIEWPORT s_ShadowMapViewport = { 0.f, 0.f, (float)s_SHADOW_MAP_RES, (float)s_SHADOW_MAP_RES, 0.f, 1.f };
 		static constexpr D3D11_VIEWPORT s_ISMViewport = { 0.f, 0.f, (float)s_ISM_RES, (float)s_ISM_RES, 0.f, 1.f };
 

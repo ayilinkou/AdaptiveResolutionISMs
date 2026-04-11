@@ -1,3 +1,5 @@
+#include <print>
+
 #include "assimp/mesh.h"
 
 #include "ModelData.h"
@@ -16,7 +18,7 @@ namespace Core {
 		m_Vertices = std::make_unique<std::vector<Vertex>>();
 
 		m_PointCloudCount = 0u;
-		m_PointCloudDensity = 0.001f;
+		m_PointCloudDensity = 0.01f;
 	}
 
 	ModelData::~ModelData()
@@ -109,21 +111,21 @@ namespace Core {
 
 	void ModelData::ProcessPointCloudVertices()
 	{
-		Timer processTimer("Processing point cloud vertices");
 		Timer loadFromFileTimer("Loading point cloud from file");
 		m_PointCloudPoints = PointCloudConverter::LoadFromFile(m_ModelPath, m_PointCloudDensity);
 		
 		if (m_PointCloudPoints.get())
 		{
 			// loaded from file successfully
-			processTimer.InvalidateTimer();
 			return;
 		}
 		else
 		{
 			// not saved to file
 			// process vertices and save to file
+			std::print("Processing point cloud vertices...");
 			loadFromFileTimer.InvalidateTimer();
+			Timer processTimer("Processing point cloud vertices");
 			m_PointCloudPoints = PointCloudConverter::LoadFromBuffers(*m_Indices, *m_Vertices, m_MeshLocalTransformsT, m_PointCloudDensity);
 			processTimer.EndTimer();
 
