@@ -80,11 +80,12 @@ set(SHADER_FILES
     Source/Core/Shader/Shaders/GlobalCBuffer.hlsl
     Source/Core/Shader/Shaders/Common.hlsl
 
-    Source/Core/Shader/Shaders/BasicVS.hlsl
+    Source/Core/Shader/Shaders/GeometryPassVS.hlsl
     Source/Core/Shader/Shaders/ShadowVS.hlsl
+    Source/Core/Shader/Shaders/QuadVS.hlsl
 
-    Source/Core/Shader/Shaders/BasicPS.hlsl
-    Source/Core/Shader/Shaders/TransparentPS.hlsl
+    Source/Core/Shader/Shaders/GeometryPassPS.hlsl
+    Source/Core/Shader/Shaders/LightingPassPS.hlsl
     Source/Core/Shader/Shaders/PointLightShadowPS.hlsl
 
     Source/Core/Shader/Shaders/ISMSplatCS.hlsl

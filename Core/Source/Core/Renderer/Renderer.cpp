@@ -82,6 +82,93 @@ namespace Core {
 		backBufferPtr->Release();
 		backBufferPtr = nullptr;
 
+		D3D11_TEXTURE2D_DESC albedoTexDesc = {};
+		albedoTexDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		albedoTexDesc.Width = m_Spec.WinSpec.Width;
+		albedoTexDesc.Height = m_Spec.WinSpec.Height;
+		albedoTexDesc.MipLevels = 1u;
+		albedoTexDesc.ArraySize = 1u;
+		albedoTexDesc.SampleDesc.Count = 1u;
+		albedoTexDesc.Usage = D3D11_USAGE_DEFAULT;
+		albedoTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> albedoTex;
+		ASSERT_NOT_FAILED(m_Device->CreateTexture2D(&albedoTexDesc, nullptr, &albedoTex));
+		NAME_D3D_RESOURCE(albedoTex, "G-buffer albedo texture");
+
+		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+		rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+		
+		ASSERT_NOT_FAILED(m_Device->CreateRenderTargetView(albedoTex.Get(), &rtvDesc, &m_AlbedoRTV));
+		NAME_D3D_RESOURCE(m_AlbedoRTV, "G-buffer albedo RTV");
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MipLevels = 1u;
+
+		ASSERT_NOT_FAILED(m_Device->CreateShaderResourceView(albedoTex.Get(), &srvDesc, &m_AlbedoSRV));
+		NAME_D3D_RESOURCE(m_AlbedoSRV, "G-buffer albedo SRV");
+
+		D3D11_TEXTURE2D_DESC normalSpecTexDesc = {};
+		normalSpecTexDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		normalSpecTexDesc.Width = m_Spec.WinSpec.Width;
+		normalSpecTexDesc.Height = m_Spec.WinSpec.Height;
+		normalSpecTexDesc.MipLevels = 1u;
+		normalSpecTexDesc.ArraySize = 1u;
+		normalSpecTexDesc.SampleDesc.Count = 1u;
+		normalSpecTexDesc.Usage = D3D11_USAGE_DEFAULT;
+		normalSpecTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> normalSpecTex;
+		ASSERT_NOT_FAILED(m_Device->CreateTexture2D(&normalSpecTexDesc, nullptr, &normalSpecTex));
+		NAME_D3D_RESOURCE(normalSpecTex, "G-buffer normal specular texture");
+
+		rtvDesc = {};
+		rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
+		ASSERT_NOT_FAILED(m_Device->CreateRenderTargetView(normalSpecTex.Get(), &rtvDesc, &m_NormalSpecRTV));
+		NAME_D3D_RESOURCE(m_NormalSpecRTV, "G-buffer normal specular RTV");
+
+		srvDesc = {};
+		srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MipLevels = 1u;
+
+		ASSERT_NOT_FAILED(m_Device->CreateShaderResourceView(normalSpecTex.Get(), &srvDesc, &m_NormalSpecSRV));
+		NAME_D3D_RESOURCE(m_NormalSpecSRV, "G-buffer normal specular SRV");
+
+		D3D11_TEXTURE2D_DESC emissiveTexDesc = {};
+		emissiveTexDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		emissiveTexDesc.Width = m_Spec.WinSpec.Width;
+		emissiveTexDesc.Height = m_Spec.WinSpec.Height;
+		emissiveTexDesc.MipLevels = 1u;
+		emissiveTexDesc.ArraySize = 1u;
+		emissiveTexDesc.SampleDesc.Count = 1u;
+		emissiveTexDesc.Usage = D3D11_USAGE_DEFAULT;
+		emissiveTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> emissiveTex;
+		ASSERT_NOT_FAILED(m_Device->CreateTexture2D(&emissiveTexDesc, nullptr, &emissiveTex));
+		NAME_D3D_RESOURCE(emissiveTex, "G-buffer emissive texture");
+
+		rtvDesc = {};
+		rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
+		ASSERT_NOT_FAILED(m_Device->CreateRenderTargetView(emissiveTex.Get(), &rtvDesc, &m_EmissiveRTV));
+		NAME_D3D_RESOURCE(m_EmissiveRTV, "G-buffer emissive RTV");
+
+		srvDesc = {};
+		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MipLevels = 1u;
+
+		ASSERT_NOT_FAILED(m_Device->CreateShaderResourceView(emissiveTex.Get(), &srvDesc, &m_EmissiveSRV));
+		NAME_D3D_RESOURCE(m_EmissiveSRV, "G-buffer emissive SRV");
+
 		D3D11_TEXTURE2D_DESC depthTextureDesc = {};
 		depthTextureDesc.Width = m_Spec.WinSpec.Width;
 		depthTextureDesc.Height = m_Spec.WinSpec.Height;
@@ -123,6 +210,11 @@ namespace Core {
 
 		ASSERT_NOT_FAILED(m_Device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilStateWriteDisabled));
 		NAME_D3D_RESOURCE(m_DepthStencilStateWriteDisabled, "Depth stencil state write disabled");
+
+		depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+
+		ASSERT_NOT_FAILED(m_Device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilStateWriteDisabledAlwaysPass));
+		NAME_D3D_RESOURCE(m_DepthStencilStateWriteDisabledAlwaysPass, "Depth stencil state write disabled always pass");
 		
 		m_Context->OMSetDepthStencilState(m_DepthStencilStateWriteEnabled.Get(), 1u);
 
@@ -205,8 +297,23 @@ namespace Core {
 		samplerDesc.MinLOD = 0;
 		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&samplerDesc, &m_SamplerLinear));
-		NAME_D3D_RESOURCE(m_SamplerLinear, "Linear sampler state");
+		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&samplerDesc, &m_LinearSampler));
+		NAME_D3D_RESOURCE(m_LinearSampler, "Linear sampler state");
+
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		samplerDesc.BorderColor[0] = 0.f;
+		samplerDesc.BorderColor[1] = 0.f;
+		samplerDesc.BorderColor[2] = 0.f;
+		samplerDesc.BorderColor[3] = 1.f;
+		samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		samplerDesc.MinLOD = 0;
+		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&samplerDesc, &m_PointSampler));
+		NAME_D3D_RESOURCE(m_PointSampler, "Point sampler state");
 
 		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
@@ -220,13 +327,13 @@ namespace Core {
 		ASSERT_NOT_FAILED(m_Device->CreateSamplerState(&samplerDesc, &m_ShadowMapSampler));
 		NAME_D3D_RESOURCE(m_ShadowMapSampler, "Shadow map sampler state");
 
-		ID3D11SamplerState* samplers[2] = { m_SamplerLinear.Get(), m_ShadowMapSampler.Get() };
-		m_Context->VSSetSamplers(0u, 2u, samplers);
-		m_Context->HSSetSamplers(0u, 2u, samplers);
-		m_Context->DSSetSamplers(0u, 2u, samplers);
-		m_Context->GSSetSamplers(0u, 2u, samplers);
-		m_Context->PSSetSamplers(0u, 2u, samplers);
-		m_Context->CSSetSamplers(0u, 2u, samplers);
+		ID3D11SamplerState* samplers[3] = { m_PointSampler.Get(), m_LinearSampler.Get(), m_ShadowMapSampler.Get() };
+		m_Context->VSSetSamplers(0u, 3u, samplers);
+		m_Context->HSSetSamplers(0u, 3u, samplers);
+		m_Context->DSSetSamplers(0u, 3u, samplers);
+		m_Context->GSSetSamplers(0u, 3u, samplers);
+		m_Context->PSSetSamplers(0u, 3u, samplers);
+		m_Context->CSSetSamplers(0u, 3u, samplers);
 
 		D3D11_QUERY_DESC queryDesc = {};
 		queryDesc.Query = D3D11_QUERY_PIPELINE_STATISTICS;
@@ -264,7 +371,9 @@ namespace Core {
 		m_BlendStateTransparent.Reset();
 		m_RasterStateBackFaceCullOn.Reset();
 		m_RasterStateBackFaceCullOff.Reset();
-		m_SamplerLinear.Reset();
+		m_PointSampler.Reset();
+		m_LinearSampler.Reset();
+		m_ShadowMapSampler.Reset();
 		m_BackBufferRTV.Reset();
 		m_PipelineStatsQuery.Reset();
 
@@ -285,7 +394,11 @@ namespace Core {
 
 	void Renderer::BeginScene()
 	{
-		m_Context->ClearRenderTargetView(m_BackBufferRTV.Get(), reinterpret_cast<float*>(&m_ClearColor));
+		float clearColor[4] = { 0.f, 0.f, 0.f, 0.f };
+		m_Context->ClearRenderTargetView(m_EmissiveRTV.Get(), reinterpret_cast<float*>(&m_ClearColor));
+		m_Context->ClearRenderTargetView(m_AlbedoRTV.Get(), clearColor);
+		m_Context->ClearRenderTargetView(m_NormalSpecRTV.Get(), clearColor);
+		m_Context->ClearRenderTargetView(m_BackBufferRTV.Get(), clearColor);
 		m_Context->ClearDepthStencilView(m_DSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0u);
 	}
 
@@ -321,22 +434,38 @@ namespace Core {
 		m_Context->OMSetDepthStencilState(m_DepthStencilStateWriteDisabled.Get(), 1u);
 	}
 
-	void Renderer::BindForOpaqueDraws()
+	void Renderer::DisableDepthWriteAlwaysPass()
 	{
+		m_Context->OMSetDepthStencilState(m_DepthStencilStateWriteDisabledAlwaysPass.Get(), 1u);
+	}
+
+	void Renderer::BindForGeometryPass()
+	{
+		ID3D11RenderTargetView* gBufferRTVs[3] = { m_AlbedoRTV.Get(), m_NormalSpecRTV.Get(), m_EmissiveRTV.Get() };
 		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
-		m_OpaqueShaderProgram->Bind();
+		m_Context->OMSetRenderTargets(3u, gBufferRTVs, m_DSV.Get());
+		SetBackBufferViewport();
+		m_GeometryPassShaderProgram->Bind();
 		EnableDepthWrite();
 		DisableBlending();
 	}
 
-	void Renderer::BindForTransparentDraws()
+	void Renderer::BindForLightingPass()
 	{
+		UINT offsets[1] = { 0u };
+		ID3D11ShaderResourceView* SRVs[4] = { m_AlbedoSRV.Get(), m_NormalSpecSRV.Get(), m_EmissiveSRV.Get(), m_DepthStencilSRV.Get() };
+
 		m_Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		m_Context->IASetInputLayout(m_ModelInputLayout.Get());
-		m_TransparentShaderProgram->Bind();
-		DisableDepthWrite();
-		EnableBlending();
+		m_Context->IASetInputLayout(m_LightingPassInputLayout.Get());
+		m_Context->IASetVertexBuffers(0u, 1u, m_LightingVertexBuffer.GetAddressOf(), &m_LightingPassVertexBufferStride, offsets);
+		m_Context->IASetIndexBuffer(m_LightingIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0u);
+		m_Context->PSSetShaderResources(0u, 4u, SRVs);
+		m_Context->OMSetRenderTargets(1u, m_BackBufferRTV.GetAddressOf(), nullptr);
+		SetBackBufferViewport();
+		m_LightingPassShaderProgram->Bind();
+		DisableDepthWriteAlwaysPass();
+		DisableBlending();
 	}
 
 	void Renderer::BindForDSVShadowPass()
@@ -467,6 +596,8 @@ namespace Core {
 	{
 		m_GlobalCBufferData.CameraData.View = DirectX::XMMatrixTranspose(activeCamera->GetViewMatrix());
 		m_GlobalCBufferData.CameraData.Proj = DirectX::XMMatrixTranspose(activeCamera->GetProjMatrix());
+		m_GlobalCBufferData.CameraData.InverseView = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, activeCamera->GetViewMatrix()));
+		m_GlobalCBufferData.CameraData.InverseProj = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, activeCamera->GetProjMatrix()));
 		m_GlobalCBufferData.CameraData.CameraPos = activeCamera->GetPosition();
 		m_GlobalCBufferData.LightData = LightManager::GetLightBufferData(); // TODO: could give LightManager the address and have it store directly, rather than copy
 		m_GlobalCBufferData.NearZ = activeCamera->GetNearZ();
@@ -503,22 +634,95 @@ namespace Core {
 		
 		UINT numElements = _countof(vertexLayoutElements);
 
-		ASSERT_NOT_FAILED(m_Device->CreateInputLayout(vertexLayoutElements, numElements, m_OpaqueShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
-			m_OpaqueShaderProgram->GetVertexShaderBlob()->GetBufferSize(), &m_ModelInputLayout));
+		ASSERT_NOT_FAILED(m_Device->CreateInputLayout(
+			vertexLayoutElements,
+			numElements,
+			m_GeometryPassShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
+			m_GeometryPassShaderProgram->GetVertexShaderBlob()->GetBufferSize(),
+			&m_ModelInputLayout)
+		);
 		NAME_D3D_RESOURCE(m_ModelInputLayout, "Model input layout");
+
+		D3D11_INPUT_ELEMENT_DESC lightingVertexLayout[2] = {};
+
+		lightingVertexLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+		lightingVertexLayout[0].SemanticName = "POSITION";
+		lightingVertexLayout[0].SemanticIndex = 0;
+		lightingVertexLayout[0].InputSlot = 0;
+		lightingVertexLayout[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		lightingVertexLayout[0].AlignedByteOffset = 0;
+		lightingVertexLayout[0].InstanceDataStepRate = 0;
+
+		lightingVertexLayout[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+		lightingVertexLayout[1].SemanticName = "TEXCOORD";
+		lightingVertexLayout[1].SemanticIndex = 0;
+		lightingVertexLayout[1].InputSlot = 0;
+		lightingVertexLayout[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		lightingVertexLayout[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+		lightingVertexLayout[1].InstanceDataStepRate = 0;
+
+		numElements = _countof(lightingVertexLayout);
+		ASSERT_NOT_FAILED(m_Device->CreateInputLayout(
+			lightingVertexLayout,
+			numElements,
+			m_LightingPassShaderProgram->GetVertexShaderBlob()->GetBufferPointer(),
+			m_LightingPassShaderProgram->GetVertexShaderBlob()->GetBufferSize(),
+			&m_LightingPassInputLayout)
+		);
+		NAME_D3D_RESOURCE(m_LightingPassInputLayout, "Lighting pass input layout");
+
+		struct Vertex {
+			DirectX::XMFLOAT3 Pos;
+			DirectX::XMFLOAT2 UV;
+		};
+
+		Vertex quadVertices[] = {
+			{ DirectX::XMFLOAT3(-1.0f,  1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f), },
+			{ DirectX::XMFLOAT3(1.0f,  1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 0.0f), },
+			{ DirectX::XMFLOAT3(-1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f), },
+			{ DirectX::XMFLOAT3(1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 1.0f), },
+		};
+		m_LightingPassVertexBufferStride = sizeof(quadVertices) / 4u;
+
+		D3D11_BUFFER_DESC bufferDesc = {};
+		bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		bufferDesc.ByteWidth = sizeof(quadVertices);
+		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+		D3D11_SUBRESOURCE_DATA initData = {};
+		initData.pSysMem = quadVertices;
+
+		ASSERT_NOT_FAILED(m_Device->CreateBuffer(&bufferDesc, &initData, &m_LightingVertexBuffer));
+		NAME_D3D_RESOURCE(m_LightingVertexBuffer, "Lighting pass vertex buffer");
+
+		unsigned int quadIndices[] = {
+			1, 2, 0,
+			3, 2, 1
+		};
+
+		bufferDesc = {};
+		bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		bufferDesc.ByteWidth = sizeof(quadIndices);
+		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+
+		initData = {};
+		initData.pSysMem = quadIndices;
+
+		ASSERT_NOT_FAILED(m_Device->CreateBuffer(&bufferDesc, &initData, &m_LightingIndexBuffer));
+		NAME_D3D_RESOURCE(m_LightingIndexBuffer, "Lighting pass index buffer");
 	}
 
 	void Renderer::CreateShaderPrograms()
 	{
 		ShaderProgramDesc desc = {};
-		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/BasicVS.hlsl";
-		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/BasicPS.hlsl";
-		m_OpaqueShaderProgram = std::make_unique<ShaderProgram>(desc);
+		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/GeometryPassVS.hlsl";
+		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/GeometryPassPS.hlsl";
+		m_GeometryPassShaderProgram = std::make_unique<ShaderProgram>(desc);
 
 		desc = {};
-		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/BasicVS.hlsl";
-		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/TransparentPS.hlsl";
-		m_TransparentShaderProgram = std::make_unique<ShaderProgram>(desc);
+		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/QuadVS.hlsl";
+		desc.Pixel.Filepath = "../Core/Source/Core/Shader/Shaders/LightingPassPS.hlsl";
+		m_LightingPassShaderProgram = std::make_unique<ShaderProgram>(desc);
 
 		desc = {};
 		desc.Vertex.Filepath = "../Core/Source/Core/Shader/Shaders/ShadowVS.hlsl";
@@ -533,8 +737,8 @@ namespace Core {
 
 	void Core::Renderer::DestroyShaderPrograms()
 	{
-		m_OpaqueShaderProgram.reset();
-		m_TransparentShaderProgram.reset();
+		m_GeometryPassShaderProgram.reset();
+		m_LightingPassShaderProgram.reset();
 		m_DSVShadowShaderProgram.reset();
 		m_PointLightShadowShaderProgram.reset();
 	}

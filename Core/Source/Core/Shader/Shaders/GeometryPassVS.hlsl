@@ -83,7 +83,7 @@ VS_Out main(VS_In v)
 	o.pos = mul(o.pos, globalCBuffer.Camera.Proj);
 	
 	float4x4 modelMatrix = mul(localTransforms[modelID], worldTransforms[instanceID]);
-	float3x3 normalMatrix = transpose((float3x3)inverse(modelMatrix));
+	float3x3 normalMatrix = transpose((float3x3) inverse(modelMatrix));
 	o.normal = mul(v.normal, normalMatrix);
 	o.uv = v.uv;
 	

@@ -14,12 +14,6 @@ namespace Core
 {
 	class Model;
 	class ModelData;
-	
-	enum RenderPassType
-	{
-		Main,
-		Shadow
-	};
 
 	enum class ShadowType
 	{
@@ -62,8 +56,9 @@ namespace Core
 		RenderQueue();
 
 		void PopulateRenderQueue();
-		void RenderMainPass(ShadowType shadowType);
+		void RenderGeometryPass();
 		void RenderShadowPass(ShadowType shadowType);
+		void RenderLightingPass(ShadowType shadowType);
 
 		static float& GetISMCoverageThresholdRef() { return s_ISMCoverageThreshold; }
 
@@ -71,7 +66,7 @@ namespace Core
 		void Init();
 		void CreateBuffers();
 
-		void RenderPass(RenderPassType passType, ShadowType shadowType = ShadowType::None);
+		void ShadowMapPassSingle();
 
 		void UpdateLocalCBuffer(const std::vector<DirectX::XMMATRIX>& modelLocalTransformsT);
 		void UpdateWorldCBuffer(const std::vector<DirectX::XMMATRIX>& modelWorldTransformsT);

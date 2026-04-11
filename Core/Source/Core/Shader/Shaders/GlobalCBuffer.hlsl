@@ -1,9 +1,14 @@
+#ifndef GLOBALCBUFFER_HLSL
+#define GLOBALCBUFFER_HLSL
+
 #include "../../Utility/Constants.h"
 
 struct CameraData
 {
 	float4x4 View;
 	float4x4 Proj;
+	float4x4 InverseView;
+	float4x4 InverseProj;
 	float3 Pos;
 	float Padding;
 };
@@ -70,3 +75,5 @@ cbuffer GlobalCBuffer : register(b0)
 {
 	GlobalCBufferData globalCBuffer;
 };
+
+#endif

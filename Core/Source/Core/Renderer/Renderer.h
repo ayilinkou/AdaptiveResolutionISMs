@@ -14,13 +14,13 @@
 namespace Core {
 
 	class Camera;
-
-	using namespace Microsoft::WRL;
 	
 	struct CameraBuffer
 	{
 		DirectX::XMMATRIX View;
 		DirectX::XMMATRIX Proj;
+		DirectX::XMMATRIX InverseView;
+		DirectX::XMMATRIX InverseProj;
 		DirectX::XMFLOAT3 CameraPos;
 		float Padding;
 	};
@@ -73,9 +73,10 @@ namespace Core {
 		void DisableBlending();
 		void EnableDepthWrite();
 		void DisableDepthWrite();
+		void DisableDepthWriteAlwaysPass();
 
-		void BindForOpaqueDraws();
-		void BindForTransparentDraws();
+		void BindForGeometryPass();
+		void BindForLightingPass();
 		void BindForDSVShadowPass();
 		void BindForPointLightShadowPass();
 		void SetBackFaceCulling(bool bEnabled);
@@ -91,31 +92,39 @@ namespace Core {
 	private:
 		struct AdapterAndOutput
 		{
-			ComPtr<IDXGIAdapter> Adapter;
-			ComPtr<IDXGIOutput> Output;
+			Microsoft::WRL::ComPtr<IDXGIAdapter> Adapter;
+			Microsoft::WRL::ComPtr<IDXGIOutput> Output;
 			DXGI_MODE_DESC Mode = {};
 		};
 
 		AdapterAndOutput GetBestAdapterAndOutput() const;
 
 	private:
-		ComPtr<ID3D11Device> m_Device;
-		ComPtr<ID3D11DeviceContext> m_Context;
-		ComPtr<IDXGISwapChain> m_SwapChain;
-		ComPtr<ID3D11RenderTargetView> m_BackBufferRTV;
-		ComPtr<ID3D11Texture2D> m_DepthStencilTexture;
-		ComPtr<ID3D11DepthStencilView> m_DSV;
-		ComPtr<ID3D11DepthStencilState> m_DepthStencilStateWriteEnabled;
-		ComPtr<ID3D11DepthStencilState> m_DepthStencilStateWriteDisabled;
-		ComPtr<ID3D11ShaderResourceView> m_DepthStencilSRV;
-		ComPtr<ID3D11BlendState> m_BlendStateOpaque;
-		ComPtr<ID3D11BlendState> m_BlendStateTransparent;
-		ComPtr<ID3D11RasterizerState> m_RasterStateBackFaceCullOn;
-		ComPtr<ID3D11RasterizerState> m_RasterStateBackFaceCullOff;
-		ComPtr<ID3D11SamplerState> m_SamplerLinear;
-		ComPtr<ID3D11SamplerState> m_ShadowMapSampler;
-		ComPtr<ID3D11Query> m_PipelineStatsQuery;
-		ComPtr<ID3D11Buffer> m_GlobalCBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Device> m_Device;
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_Context;
+		Microsoft::WRL::ComPtr<IDXGISwapChain> m_SwapChain;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_BackBufferRTV;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_AlbedoRTV;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_NormalSpecRTV;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_EmissiveRTV;
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> m_DepthStencilTexture;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_DSV;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DepthStencilStateWriteEnabled;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DepthStencilStateWriteDisabled;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DepthStencilStateWriteDisabledAlwaysPass;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_AlbedoSRV;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_NormalSpecSRV;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_EmissiveSRV;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_DepthStencilSRV;
+		Microsoft::WRL::ComPtr<ID3D11BlendState> m_BlendStateOpaque;
+		Microsoft::WRL::ComPtr<ID3D11BlendState> m_BlendStateTransparent;
+		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RasterStateBackFaceCullOn;
+		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RasterStateBackFaceCullOff;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_PointSampler;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_LinearSampler;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_ShadowMapSampler;
+		Microsoft::WRL::ComPtr<ID3D11Query> m_PipelineStatsQuery;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_GlobalCBuffer;
 
 		D3D11_VIEWPORT m_Viewport = {};
 
@@ -124,11 +133,11 @@ namespace Core {
 		void UpdateGlobalConstantBuffer(Camera* ActiveCamera, float appTime);
 
 	public:
-		ComPtr<ID3D11Device> GetDevice() const { return m_Device; }
-		ComPtr<ID3D11DeviceContext> GetContext() const { return m_Context; }
+		Microsoft::WRL::ComPtr<ID3D11Device> GetDevice() const { return m_Device; }
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> GetContext() const { return m_Context; }
 
-		ComPtr<ID3D11RenderTargetView> GetBackBufferRTV() const { return m_BackBufferRTV; }
-		ComPtr<ID3D11DepthStencilView> GetDSV() const { return m_DSV; }
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> GetBackBufferRTV() const { return m_BackBufferRTV; }
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> GetDSV() const { return m_DSV; }
 
 	private:
 		RendererSpec m_Spec;
@@ -136,10 +145,16 @@ namespace Core {
 
 		GlobalCBuffer m_GlobalCBufferData;
 
-		ComPtr<ID3D11InputLayout> m_ModelInputLayout;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout> m_ModelInputLayout;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout> m_LightingPassInputLayout;
 
-		std::unique_ptr<ShaderProgram> m_OpaqueShaderProgram;
-		std::unique_ptr<ShaderProgram> m_TransparentShaderProgram;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_LightingVertexBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_LightingIndexBuffer;
+
+		UINT m_LightingPassVertexBufferStride;
+
+		std::unique_ptr<ShaderProgram> m_GeometryPassShaderProgram;
+		std::unique_ptr<ShaderProgram> m_LightingPassShaderProgram;
 		std::unique_ptr<ShaderProgram> m_DSVShadowShaderProgram;
 		std::unique_ptr<ShaderProgram> m_PointLightShadowShaderProgram;
 

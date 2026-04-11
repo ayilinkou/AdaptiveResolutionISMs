@@ -1,3 +1,6 @@
+#ifndef COMMON_HLSL
+#define COMMON_HLSL
+
 #include "GlobalCBuffer.hlsl"
 
 #define FLT_MAX 3.402823466e+38
@@ -6,12 +9,13 @@ static const float ISM_PIXEL_INVALID = 0.f;
 static const float ISM_PIXEL_VALID = 1.f;
 static const float ISM_SPLAT_WORLD_RADIUS = 0.1f;
 
-SamplerState linearSampler : register(s0);
-SamplerState shadowSampler : register(s1);
+SamplerState pointSampler : register(s0);
+SamplerState linearSampler : register(s1);
+SamplerState shadowSampler : register(s2);
 
-Texture2DArray dirShadowMaps : register(t3);
-Texture2DArray spotShadowMaps : register(t4);
-TextureCubeArray pointShadowMaps : register(t5);
+Texture2DArray dirShadowMaps : register(t4);
+Texture2DArray spotShadowMaps : register(t5);
+TextureCubeArray pointShadowMaps : register(t6);
 
 struct SplatPixel
 {
@@ -176,3 +180,5 @@ float3 CalcLight(float3 pixelColor, float3 worldPos, float3 worldNormal, float3 
 	totalLight += CalcDirectionalLights(pixelColor, worldPos, worldNormal, pixelToCam, reflectance);
 	return totalLight;
 }
+
+#endif

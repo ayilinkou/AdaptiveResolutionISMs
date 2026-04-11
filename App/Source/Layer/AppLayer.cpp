@@ -38,15 +38,20 @@ void AppLayer::OnUpdate(double dt)
 }
 
 void AppLayer::OnRender(double dt)
-{
+{	
 	{
-		Timer timer("RenderShadowPass()");
+		//Timer timer("RenderGeometryPass()");
+		m_RenderQueue->RenderGeometryPass();
+	}
+	
+	{
+		//Timer timer("RenderShadowPass()");
 		m_RenderQueue->RenderShadowPass(m_ShadowType);
 	}
 
 	{
-		Timer timer("RenderMainPass()");
-		m_RenderQueue->RenderMainPass(m_ShadowType);
+		//Timer timer("RenderLightingPass()");
+		m_RenderQueue->RenderLightingPass(m_ShadowType);
 	}
 }
 
