@@ -3,7 +3,7 @@
 This project builds on the work by Zhang et al. (2025) and investigates the viability of adaptive resolution imperfect shadow maps.
 
 ## Prerequisites
-This project uses CMake as its build system. Please make sure you have CMake version 3.10 or newer and then run the SETUP.bat file. This will generate a Visual Studio solution in the build folder as well as download and extract the Amazon Lumberyard Bistro and NVIDIA Emerald Square 3d scenes.
+This project uses CMake as its build system. Please make sure you have CMake version 3.10 or newer and then run the SETUP.bat file. This will generate a Visual Studio solution in the build folder as well as download and extract the Amazon Lumberyard Bistro, NVIDIA Emerald Square and San Miguel 2.0 3d scenes.
 
 ## Third Party Notices
 

@@ -95,8 +95,10 @@ void UILayer::RenderScenesWindow()
 	if (ImGui::Button("Load Bistro Exterior", buttonSize))
 		LoadBistroExterior();
 
+	if (ImGui::Button("Load San Miguel", buttonSize))
+		LoadSanMiguel();
 
-	if (ImGui::Button("Load model from file", buttonSize))
+	if (ImGui::Button("Load scene from file...", buttonSize))
 		LoadFromFile();
 
 	if (ImGui::Button("Quit", buttonSize))

@@ -38,6 +38,7 @@ private:
 
 	void LoadEmeraldSquareNight();
 	void LoadBistroExterior();
+	void LoadSanMiguel();
 	void LoadFromFile();
 
 private:

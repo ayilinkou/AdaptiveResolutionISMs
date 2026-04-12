@@ -37,3 +37,9 @@ License: Creative Commons CC-BY 4.0
 NVIDIA Emerald Square is a 3d scene from NVIDIA's Open Research Content Archive (ORCA).<br>
 Website: https://developer.nvidia.com/orca/nvidia-emerald-square<br>
 License: Creative Commons CC BY-NC-SA 3.0
+
+## San Miguel 2.0
+
+San Miguel 2.0 is an improved version of the original San Miguel model by Guillermo M. Leal Llaguno of Evolucien Visual.<br>
+Website: https://casual-effects.com/data/<br>
+License: Creative Commons CC-BY 3.0

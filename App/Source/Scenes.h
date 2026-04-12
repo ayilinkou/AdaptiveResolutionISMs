@@ -15,7 +15,7 @@ struct SceneInfo
 namespace Scenes {
 	constexpr SceneInfo EmeraldSquareDusk = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Dusk.fbx", "Models/EmeraldSquare_v4_1", 0.0005f };
 	constexpr SceneInfo BistroExterior = { "Models/Bistro_v5_2/BistroExterior.fbx", "Models/Bistro_v5_2", 0.1f };
-
+	constexpr SceneInfo SanMiguel = { "Models/San_Miguel/san-miguel-low-poly.obj", "Models/San_Miguel", 0.01f };
 }
 
 DirectX::XMFLOAT3 operator+(const DirectX::XMFLOAT3& a, const DirectX::XMFLOAT3& b)
@@ -133,9 +133,14 @@ void UILayer::LoadBistroExterior()
 	Core::Application::Get()->GetCamera()->SetPosition(-21.2f, 5.8f, -2.f);
 	Core::Application::Get()->GetCamera()->SetRotation(8.9f, -277.f);
 
-	Core::LightManager::GetDirectionalLights().clear();
+	Core::LightManager::GetDirectionalLights()[0]->SetActive(false);
 
-	const DirectX::XMFLOAT3 streetLightPositions[3] = {
+	DirectX::XMFLOAT3 color = { 1.f, 0.8f, 0.4f };
+	DirectX::XMFLOAT3 attenuation = { 1.f, 0.f, 0.f };
+	float lightIntensity = 5.f;
+
+	// street lights
+	/*const DirectX::XMFLOAT3 streetLightPositions[3] = {
 		{  -6.93f, 6.9f,  6.7f },
 		{  -3.30f, 6.9f, -7.4f },
 		{ -15.43f, 6.9f, -3.3f }
@@ -155,10 +160,6 @@ void UILayer::LoadBistroExterior()
 		{  0.0f, -0.866f,  0.5f }
 	};
 
-	DirectX::XMFLOAT3 color = { 1.f, 0.8f, 0.4f };
-	DirectX::XMFLOAT3 attenuation = { 1.f, 0.f, 0.f };
-	float streetLightIntensity = 5.f;
-
 	for (UINT i = 0u; i < _countof(streetLightPositions); i++)
 	{
 		for (int j = 0; j < 4; j++)
@@ -167,11 +168,11 @@ void UILayer::LoadBistroExterior()
 			std::string name = "Street Light " + std::to_string(i) + "_" + std::to_string(j);
 			streetLight->SetName(name);
 			streetLight->SetPosition(streetLightPositions[i] + streetLightOffsets[j]);
-			streetLight->SetIntensity(streetLightIntensity);
+			streetLight->SetIntensity(lightIntensity);
 			streetLight->SetAngles(0.f, 89.f);
-			//pAppLayer->AddLight(std::move(streetLight));
+			pAppLayer->AddLight(std::move(streetLight));
 		}
-	}
+	}*/
 
 	const DirectX::XMFLOAT3 shopLightPositions[8] = {
 		{   3.17f, 6.9f, 16.8f },
@@ -201,10 +202,59 @@ void UILayer::LoadBistroExterior()
 		std::string name = "Shop Light " + std::to_string(i);
 		shopLight->SetName(name);
 		shopLight->SetPosition(shopLightPositions[i]);
-		shopLight->SetIntensity(streetLightIntensity);
+		shopLight->SetIntensity(lightIntensity);
 		shopLight->SetAngles(0.f, 89.f);
 		pAppLayer->AddLight(std::move(shopLight));
 	}
+
+	ToggleVisibility();
+}
+
+void UILayer::LoadSanMiguel()
+{
+	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
+	if (pAppLayer)
+		pAppLayer->LoadScene(Scenes::SanMiguel);
+
+	Core::Application::Get()->GetCamera()->SetPosition(-21.2f, 5.8f, -2.f);
+	Core::Application::Get()->GetCamera()->SetRotation(8.9f, -277.f);
+
+	Core::LightManager::GetAmbientStrengthRef() = 0.01f;
+	DirectX::XMFLOAT4 skyboxColor = { 0.05f, 0.1f, 0.1f, 1.f };
+	Core::Renderer::Get()->SetClearColor(skyboxColor);
+
+	DirectX::XMFLOAT3 color = { 1.f, 1.f, 1.f };
+	DirectX::XMFLOAT3 dir = { 0.11f, -0.98f, -0.18f };
+	auto dirLight = std::make_unique<Core::DirectionalLight>(color, dir);
+	pAppLayer->AddLight(std::move(dirLight));
+
+	color = { 1.f, 0.8f, 0.4f };
+	dir = { 0.f, -1.f, 0.f };
+	DirectX::XMFLOAT3 attenuation = { 1.f, 0.f, 0.f };
+	float lightIntensity = 1.f;
+	auto lightOne = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	lightOne->SetName("Light 1");
+	lightOne->SetPosition(-55.6f, 5.7f, 4.9f);
+	lightOne->SetIntensity(lightIntensity);
+	pAppLayer->AddLight(std::move(lightOne));
+
+	auto lightTwo = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	lightTwo->SetName("Light 2");
+	lightTwo->SetPosition(-55.6f, 5.7f, -5.6f);
+	lightTwo->SetIntensity(lightIntensity);
+	pAppLayer->AddLight(std::move(lightTwo));
+
+	auto lightThree = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	lightThree->SetName("Light 3");
+	lightThree->SetPosition(-66.2f, 5.7f, -5.6f);
+	lightThree->SetIntensity(lightIntensity);
+	pAppLayer->AddLight(std::move(lightThree));
+
+	auto lightFour = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	lightFour->SetName("Light 4");
+	lightFour->SetPosition(-71.3f, 5.7f, -21.f);
+	lightFour->SetIntensity(lightIntensity);
+	pAppLayer->AddLight(std::move(lightFour));
 
 	ToggleVisibility();
 }
