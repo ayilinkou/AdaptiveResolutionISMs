@@ -1,4 +1,6 @@
 #include <ranges>
+#include <thread>
+#include <chrono>
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
@@ -65,6 +67,8 @@ namespace Core {
 		m_Window.reset();
 		
 		ImGui::DestroyContext();
+
+		CoUninitialize();
 	}
 
 	void Application::Run()
@@ -85,6 +89,11 @@ namespace Core {
 				break;
 			}
 
+			if (GetForegroundWindow() != m_Window->GetHandle())
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(200));
+			}
+
 			UpdateAppTime();
 
 			Core::VramInfo vramInfo = Core::Renderer::Get()->QueryVramUsage();
@@ -95,10 +104,10 @@ namespace Core {
 			std::string newTitle = m_Spec.Name + " - Frame time: " + frameTimeString + "ms, VRAM: " + vramUsage + "/" + vramBudget + "MB";
 			SetWindowText(m_Window->GetHandle(), newTitle.c_str());
 
-			Timer onUpdateTimer("OnUpdate");
+			//Timer onUpdateTimer("OnUpdate");
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnUpdate(m_DeltaTime);
-			onUpdateTimer.EndTimer();
+			//onUpdateTimer.EndTimer();
 
 			m_Camera->CalcViewMatrix();
 			LightManager::UpdateLightBufferData();
@@ -110,10 +119,10 @@ namespace Core {
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 
-			Timer onRenderTimer("OnRender");
+			//Timer onRenderTimer("OnRender");
 			for (const std::unique_ptr<Layer>& layer : m_Layers)
 				layer->OnRender(m_DeltaTime);
-			onRenderTimer.EndTimer();
+			//onRenderTimer.EndTimer();
 
 			ImGui::EndFrame();
 			ImGui::Render();

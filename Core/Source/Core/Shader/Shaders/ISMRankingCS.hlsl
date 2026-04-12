@@ -117,7 +117,7 @@ void main(uint3 id : SV_DispatchThreadID)
 		float p = weight / reservoir.WeightSum;
 		
 		if (RandomFloat(rngState) < p)
-			reservoir.LightID = globalCBuffer.Lights.SpotLights[i].GlobalID;
+			reservoir.LightID = i;
 	}
 	
 	if (reservoir.WeightSum == 0.f)

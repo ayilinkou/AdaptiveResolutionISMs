@@ -88,7 +88,7 @@ namespace Core {
 		}
 
 		ImGui::SliderFloat("Specular Power", &m_Data.SpecularPower, 1.f, 2048.f, "%.f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::SliderFloat("Intensity", &m_Data.Intensity, 0.f, 10.f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SliderFloat("Intensity", &m_Data.Intensity, 0.f, 10.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 	}
 
 	void DirectionalLight::SetDirection(const DirectX::XMFLOAT3 dir)

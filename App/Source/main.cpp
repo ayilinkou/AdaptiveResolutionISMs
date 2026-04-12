@@ -15,9 +15,9 @@ int main()
 	Core::ApplicationSpec appSpec;
 	appSpec.Name = "Adaptive Resolution ISMs";
 	appSpec.WinSpec.Title = appSpec.Name;
-	appSpec.WinSpec.Width = 1280;
-	appSpec.WinSpec.Height = 720;
-	appSpec.WinSpec.bFullscreen = false;
+	appSpec.WinSpec.Width = 1600;
+	appSpec.WinSpec.Height = 900;
+	appSpec.WinSpec.Type = Core::WindowType::Windowed;
 	appSpec.WinSpec.bUseVSync = true;
 	appSpec.RenderSpec.NearPlane = 0.1f;
 	appSpec.RenderSpec.FarPlane = 1000.f;

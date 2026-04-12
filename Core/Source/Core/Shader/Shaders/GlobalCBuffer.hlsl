@@ -40,7 +40,8 @@ struct SpotLight
 	float4x4 ViewProj;
 	uint ShadowMapRes;
 	uint GlobalID;
-	float2 Padding;
+	uint ShadowType;
+	float Padding;
 };
 
 struct DirectionalLight

@@ -6,14 +6,17 @@ namespace Core {
 	std::vector<Light*> LightManager::s_Lights;
 	std::vector<PointLight*> LightManager::s_PointLights;
 	std::vector<SpotLight*> LightManager::s_SpotLights;
+	std::vector<SpotLight*> LightManager::s_ActiveSpotLights;
 	std::vector<DirectionalLight*> LightManager::s_DirLights;
 	LightBuffer LightManager::s_LightBuffer = {};
 	Microsoft::WRL::ComPtr<ID3D11Buffer> LightManager::s_LightCBuffer;
 	float LightManager::s_AmbientStrength = 0.2f;
 	float LightManager::s_SpotLightMinBiasShadowMap = 0.0001f;
-	float LightManager::s_SpotLightMaxBiasShadowMap = 0.0005f;
+	float LightManager::s_SpotLightMaxBiasShadowMap = 0.0006f;
 	float LightManager::s_SpotLightMinBiasISM = 0.0003f;
 	float LightManager::s_SpotLightMaxBiasISM = 0.0008f;
+	float LightManager::s_SpotLightMinBiasLowISM = 0.0005f;
+	float LightManager::s_SpotLightMaxBiasLowISM = 0.0020f;
 
 	void LightManager::Init()
 	{
@@ -102,6 +105,62 @@ namespace Core {
 		}
 	}
 
+	void LightManager::UpdateSpotLights()
+	{
+		s_LightBuffer.SpotLightCount = {};
+		memset(s_LightBuffer.SpotLights, 0, sizeof(s_LightBuffer.SpotLights));
+		
+		s_ActiveSpotLights.clear();
+		for (SpotLight* pSpotLight : s_SpotLights)
+		{
+			if (s_LightBuffer.SpotLightCount == MAX_SPOT_LIGHT_COUNT)
+				break;
+
+			if (!pSpotLight || !pSpotLight->IsActive())
+				continue;
+
+			pSpotLight->SetLightBufferID(s_LightBuffer.SpotLightCount);
+			s_ActiveSpotLights.push_back(pSpotLight);
+
+			float minBias;
+			float maxBias;
+			UINT shadowMapRes;
+			switch (pSpotLight->GetShadowType())
+			{
+				case ShadowType::ShadowMap:
+				{
+					minBias = s_SpotLightMinBiasShadowMap;
+					maxBias = s_SpotLightMaxBiasShadowMap;
+					shadowMapRes = SpotLight::GetShadowMapRes();
+					break;
+				}
+				case ShadowType::ISM:
+				{
+					minBias = s_SpotLightMinBiasISM;
+					maxBias = s_SpotLightMaxBiasISM;
+					shadowMapRes = SpotLight::GetISMRes();
+					break;
+				}
+				case ShadowType::LowISM:
+				{
+					minBias = s_SpotLightMinBiasLowISM;
+					maxBias = s_SpotLightMaxBiasLowISM;
+					shadowMapRes = SpotLight::GetLowISMRes();
+					break;
+				}
+			}
+
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount] = pSpotLight->GetData();
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].ShadowType = (UINT)pSpotLight->GetShadowType();
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].CosInnerAngle = cos(DirectX::XMConvertToRadians(pSpotLight->m_ConeInnerAngle / 2.f));
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].CosOuterAngle = cos(DirectX::XMConvertToRadians(pSpotLight->m_ConeOuterAngle / 2.f));
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].MinBias = minBias;
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].MaxBias = maxBias;
+			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].ShadowMapRes = shadowMapRes;
+			s_LightBuffer.SpotLightCount++;
+		}
+	}
+
 	void LightManager::UpdateLightBufferData()
 	{
 		s_LightBuffer = {};
@@ -115,28 +174,13 @@ namespace Core {
 			if (!pPointLight || !pPointLight->IsActive())
 				continue;
 
+			pPointLight->SetLightBufferID(s_LightBuffer.PointLightCount);
+
 			s_LightBuffer.PointLights[s_LightBuffer.PointLightCount] = pPointLight->GetData();
 			s_LightBuffer.PointLightCount++;
 		}
 
-		for (SpotLight* pSpotLight : s_SpotLights)
-		{
-			if (s_LightBuffer.SpotLightCount == MAX_SPOT_LIGHT_COUNT)
-				break;
-
-			if (!pSpotLight || !pSpotLight->IsActive())
-				continue;
-
-			float minBias = pSpotLight->GetShadowType() == ShadowType::ShadowMap ? s_SpotLightMinBiasShadowMap : s_SpotLightMinBiasISM;
-			float maxBias = pSpotLight->GetShadowType() == ShadowType::ShadowMap ? s_SpotLightMaxBiasShadowMap : s_SpotLightMaxBiasISM;
-
-			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount] = pSpotLight->GetData();
-			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].CosInnerAngle = cos(DirectX::XMConvertToRadians(pSpotLight->m_ConeInnerAngle / 2.f));
-			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].CosOuterAngle = cos(DirectX::XMConvertToRadians(pSpotLight->m_ConeOuterAngle / 2.f));
-			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].MinBias = minBias;
-			s_LightBuffer.SpotLights[s_LightBuffer.SpotLightCount].MaxBias = maxBias;
-			s_LightBuffer.SpotLightCount++;
-		}
+		UpdateSpotLights();
 
 		for (UINT i = 0u; i < s_DirLights.size(); i++)
 		{
@@ -146,6 +190,8 @@ namespace Core {
 			DirectionalLight* pDirLight = s_DirLights[i];
 			if (!pDirLight || !pDirLight->IsActive())
 				continue;
+
+			pDirLight->SetLightBufferID(s_LightBuffer.DirectionalLightCount);
 
 			s_LightBuffer.DirectionalLights[s_LightBuffer.DirectionalLightCount] = pDirLight->GetData();
 			s_LightBuffer.DirectionalLightCount++;

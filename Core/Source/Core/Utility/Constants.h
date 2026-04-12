@@ -13,4 +13,8 @@
 #define ISM_RANKING_THREADS_X 32
 #define ISM_RANKING_THREADS_Y 32
 
+#define SHADOW_TYPE_SM 0
+#define SHADOW_TYPE_ISM 1
+#define SHADOW_TYPE_ISM_LOW 2
+
 #endif

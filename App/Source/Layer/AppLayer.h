@@ -26,7 +26,9 @@ public:
 
 	void AddLight(std::unique_ptr<Core::Light>&& light);
 
-	Core::ShadowType& GetShadowTypeRef() { return m_ShadowType; }
+	Core::ShadowMethod& GetShadowMethodRef() { return m_ShadowMethod; }
+	int& GetSMCountRef() { return m_SMCount; }
+	int& GetISMCountRef() { return m_ISMCount; }
 
 private:
 	void Init();
@@ -41,5 +43,8 @@ private:
 
 	std::unique_ptr<Core::RenderQueue> m_RenderQueue;
 
-	Core::ShadowType m_ShadowType = Core::ShadowType::ISM;
+	Core::ShadowMethod m_ShadowMethod = Core::ShadowMethod::AdaptiveISM;
+
+	int m_SMCount = 1;
+	int m_ISMCount = 1;
 };

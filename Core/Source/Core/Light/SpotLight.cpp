@@ -23,6 +23,8 @@ namespace Core {
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SpotLight::s_ShadowMapsSRV;
 	std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>> SpotLight::s_ISM_UAVs;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> SpotLight::s_ISMMipSRVs;
+	std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>> SpotLight::s_LowISM_UAVs;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> SpotLight::s_LowISMMipSRVs;
 	UINT SpotLight::s_GlobalID = 0u;
 
 	SpotLight::SpotLight(DirectX::XMFLOAT3 color, DirectX::XMFLOAT3 attenuation, DirectX::XMFLOAT3 dir)
@@ -32,8 +34,9 @@ namespace Core {
 		m_Data.Attenuation = attenuation;
 		m_Data.Direction = dir;
 		m_Data.NearZ = m_NearZ;
-		m_Data.MinBias = m_ShadowType == ShadowType::ShadowMap ? LightManager::GetSpotLightMinBiasShadowMapRef() : LightManager::GetSpotLightMinBiasISMRef();
-		m_Data.MaxBias = m_ShadowType == ShadowType::ShadowMap ? LightManager::GetSpotLightMaxBiasShadowMapRef() : LightManager::GetSpotLightMaxBiasISMRef();
+		m_Data.ShadowType = (UINT)ShadowType::ShadowMap;
+		m_Data.MinBias = m_Data.ShadowType == (UINT)ShadowType::ShadowMap ? LightManager::GetSpotLightMinBiasShadowMapRef() : LightManager::GetSpotLightMinBiasISMRef();
+		m_Data.MaxBias = m_Data.ShadowType == (UINT)ShadowType::ShadowMap ? LightManager::GetSpotLightMaxBiasShadowMapRef() : LightManager::GetSpotLightMaxBiasISMRef();
 		m_Data.GlobalID = SpotLight::s_GlobalID++;
 		m_Name = "Spot Light";
 		UpdateView();
@@ -90,18 +93,31 @@ namespace Core {
 		ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(shadowMapTextureArray.Get(), &srvDesc, &s_ShadowMapsSRV));
 		NAME_D3D_RESOURCE(s_ShadowMapsSRV, "Spot light shadow maps SRV");
 
-		// ISMs
-		UINT ismMipCount = (UINT)log2((float)s_ISMViewport.Width) + 1u;
+		InitISMs(s_ISM_RES, "Spot light ISM", s_ISM_UAVs, s_ISMMipSRVs);
+		InitISMs(s_LOW_ISM_RES, "Spot light low ISM", s_LowISM_UAVs, s_LowISMMipSRVs);
+	}
+
+	void SpotLight::InitISMs(UINT res, const std::string& name, std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>>& UAVs,
+		std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>& SRVs)
+	{
+		HRESULT hResult;
+		ID3D11Device* pDevice = Renderer::Get()->GetDevice().Get();
+
+		UINT ismMipCount = (UINT)log2((float)res) + 1u;
 		Microsoft::WRL::ComPtr<ID3D11Texture2D> ISMTextureArray;
-		texDesc.Width = (UINT)s_ISMViewport.Width;
-		texDesc.Height = (UINT)s_ISMViewport.Height;
-		texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+		D3D11_TEXTURE2D_DESC texDesc = {};
+		texDesc.Width = res;
+		texDesc.Height = res;
+		texDesc.SampleDesc.Count = 1u;
+		texDesc.MipLevels = ismMipCount;
+		texDesc.Usage = D3D11_USAGE_DEFAULT;
 		texDesc.ArraySize = MAX_SPOT_LIGHT_COUNT;
-		texDesc.MipLevels = ismMipCount; 
+		texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 
 		ASSERT_NOT_FAILED(pDevice->CreateTexture2D(&texDesc, nullptr, &ISMTextureArray));
-		NAME_D3D_RESOURCE(ISMTextureArray, "Spot light ISMs texture array");
+		NAME_D3D_RESOURCE(ISMTextureArray, (name + " texture array").c_str());
 
 		for (UINT i = 0u; i < MAX_SPOT_LIGHT_COUNT; i++)
 		{
@@ -118,20 +134,24 @@ namespace Core {
 
 				Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> uav;
 				ASSERT_NOT_FAILED(pDevice->CreateUnorderedAccessView(ISMTextureArray.Get(), &uavDesc, &uav));
-				NAME_D3D_RESOURCE(uav, (std::string("Spot light ISM UAV ") + std::to_string(i) + " mip " + std::to_string(mip)).c_str());
+				NAME_D3D_RESOURCE(uav, (name + " UAV " + std::to_string(i) + " mip " + std::to_string(mip)).c_str());
 				mips.push_back(uav);
 			}
-			s_ISM_UAVs.push_back(mips);
+			UAVs.push_back(mips);
 		}
 
-		s_ISMMipSRVs.resize(ismMipCount);
+		SRVs.resize(ismMipCount);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		srvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		srvDesc.Texture2DArray.MipLevels = 1u;
+		srvDesc.Texture2DArray.ArraySize = MAX_SPOT_LIGHT_COUNT;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
 		for (UINT mip = 0u; mip < ismMipCount; mip++)
 		{
 			srvDesc.Texture2DArray.MostDetailedMip = mip;
-			ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(ISMTextureArray.Get(), &srvDesc, &s_ISMMipSRVs[mip]));
-			NAME_D3D_RESOURCE(s_ISMMipSRVs[mip], (std::string("Spot light ISMs SRV mip ") + std::to_string(mip)).c_str());
+			ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(ISMTextureArray.Get(), &srvDesc, &SRVs[mip]));
+			NAME_D3D_RESOURCE(SRVs[mip], (name + " SRV mip " + std::to_string(mip)).c_str());
 		}
 	}
 
@@ -141,6 +161,8 @@ namespace Core {
 		s_ShadowMapDSVs.clear();
 		s_ISMMipSRVs.clear();
 		s_ISM_UAVs.clear();
+		s_LowISMMipSRVs.clear();
+		s_LowISM_UAVs.clear();
 	}
 
 	void SpotLight::RenderControls()
@@ -180,6 +202,11 @@ namespace Core {
 				m_ConeInnerAngle = m_ConeOuterAngle - 0.01f;
 			UpdateProj();
 		}
+	}
+
+	void SpotLight::SetPosition(const DirectX::XMFLOAT3 pos)
+	{
+		SetPosition(pos.x, pos.y, pos.z);
 	}
 
 	void SpotLight::SetPosition(float x, float y, float z)

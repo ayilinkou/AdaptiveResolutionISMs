@@ -18,6 +18,8 @@ AppLayer::~AppLayer()
 void AppLayer::Init()
 {	
 	m_RenderQueue = std::make_unique<Core::RenderQueue>();
+	m_RenderQueue->SetSMCount((UINT)m_SMCount);
+	m_RenderQueue->SetISMCount((UINT)m_ISMCount);
 }
 
 void AppLayer::Shutdown()
@@ -34,7 +36,9 @@ void AppLayer::OnEvent(Core::Event& event)
 void AppLayer::OnUpdate(double dt)
 {
 	Core::Application::Get()->GetCamera()->MoveCamera((float)dt);
-
+	
+	m_RenderQueue->SetSMCount((UINT)m_SMCount);
+	m_RenderQueue->SetISMCount((UINT)m_ISMCount);
 	m_RenderQueue->PopulateRenderQueue();
 }
 
@@ -47,12 +51,12 @@ void AppLayer::OnRender(double dt)
 	
 	{
 		//Timer timer("RenderShadowPass()");
-		m_RenderQueue->RenderShadowPass(m_ShadowType);
+		m_RenderQueue->RenderShadowPass(m_ShadowMethod);
 	}
 
 	{
 		//Timer timer("RenderLightingPass()");
-		m_RenderQueue->RenderLightingPass(m_ShadowType);
+		m_RenderQueue->RenderLightingPass(m_ShadowMethod);
 	}
 }
 

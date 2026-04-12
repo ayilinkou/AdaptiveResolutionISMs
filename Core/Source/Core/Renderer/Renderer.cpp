@@ -56,7 +56,7 @@ namespace Core {
 		swapChainDesc.OutputWindow = m_Spec.hwnd;
 		swapChainDesc.SampleDesc.Count = 1;
 		swapChainDesc.SampleDesc.Quality = 0;
-		swapChainDesc.Windowed = !m_Spec.WinSpec.bFullscreen;
+		swapChainDesc.Windowed = m_Spec.WinSpec.Type != WindowType::Fullscreen;
 		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD; // swap to DXGI_SWAP_FLIP_DISCARD when added a second buffer
 
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
@@ -528,6 +528,18 @@ namespace Core {
 		info.Budget = memoryInfo.Budget / 1024 / 1024;
 
 		return info;
+	}
+
+	void Renderer::UpdateLightsBuffer()
+	{
+		LightManager::UpdateSpotLights();
+		m_GlobalCBufferData.LightData = LightManager::GetLightBufferData();
+
+		HRESULT hResult;
+		D3D11_MAPPED_SUBRESOURCE mappedSubresource = {};
+		ASSERT_NOT_FAILED(m_Context->Map(m_GlobalCBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mappedSubresource));
+		memcpy(mappedSubresource.pData, &m_GlobalCBufferData, sizeof(GlobalCBuffer));
+		m_Context->Unmap(m_GlobalCBuffer.Get(), 0u);
 	}
 
 	Renderer::AdapterAndOutput Renderer::GetBestAdapterAndOutput() const

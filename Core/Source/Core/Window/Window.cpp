@@ -18,8 +18,6 @@ namespace Core {
 	void Window::Init()
 	{
 		WNDCLASSEX wc;
-		DEVMODE dmScreenSettings;
-		int posX, posY;
 
 		m_hInstance = GetModuleHandle(NULL);
 
@@ -40,41 +38,50 @@ namespace Core {
 		// register the window class
 		RegisterClassEx(&wc);
 
-		unsigned long screenWidth = GetSystemMetrics(SM_CXSCREEN);
-		unsigned long screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-		// setup the screen settings depending on whether it is running in full screen or in windowed mode
-		if (m_Spec.bFullscreen)
+		unsigned long screenWidth, screenHeight;
+		switch (m_Spec.Type)
 		{
-			memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
-			dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-			dmScreenSettings.dmPelsWidth = screenWidth;
-			dmScreenSettings.dmPelsHeight = screenHeight;
-			dmScreenSettings.dmBitsPerPel = 32;
-			dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-
-			ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
-
-			posX = posY = 0;
-		}
-		else
-		{
-			screenWidth = m_Spec.Width;
-			screenHeight = m_Spec.Height;
-
-			posX = (GetSystemMetrics(SM_CXSCREEN) - screenWidth) / 2;
-			posY = (GetSystemMetrics(SM_CYSCREEN) - screenHeight) / 2;
+			case WindowType::Borderless:
+			{
+				screenWidth = GetSystemMetrics(SM_CXSCREEN);
+				screenHeight = GetSystemMetrics(SM_CYSCREEN);
+				break;
+			}
+			default:
+			{
+				screenWidth = m_Spec.Width;
+				screenHeight = m_Spec.Height;
+				break;
+			}
 		}
 
-		// only include top bar if not in fullscreen
-		DWORD windowStyle = m_Spec.bFullscreen ? WS_POPUP : (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX);
+		// only include top bar if windowed
+		DWORD windowStyle = m_Spec.Type == WindowType::Windowed ? (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX) : WS_POPUP;
 
 		// get window dimensions from client size + styling
 		RECT desiredRect = { 0, 0, (LONG)screenWidth, (LONG)screenHeight };
-		AdjustWindowRectEx(&desiredRect, windowStyle, FALSE, WS_EX_APPWINDOW);
+		if (m_Spec.Type == WindowType::Windowed)
+			AdjustWindowRectEx(&desiredRect, windowStyle, FALSE, WS_EX_APPWINDOW);
 
 		int windowWidth = desiredRect.right - desiredRect.left;
 		int windowHeight = desiredRect.bottom - desiredRect.top;
+
+		// setup the screen settings depending on whether it is running in windowed, borderless or full screen mode
+		int posX, posY;
+		switch (m_Spec.Type)
+		{
+			case WindowType::Windowed:
+			{
+				posX = (GetSystemMetrics(SM_CXSCREEN) - windowWidth) / 2;
+				posY = (GetSystemMetrics(SM_CYSCREEN) - windowHeight) / 2;
+				break;
+			}
+			default:
+			{
+				posX = posY = 0;
+				break;
+			}
+		}
 
 		m_hwnd = CreateWindowEx(
 			WS_EX_APPWINDOW,
@@ -111,7 +118,7 @@ namespace Core {
 		ShowCursor(true);
 		ClipCursor(NULL);
 
-		if (m_Spec.bFullscreen)
+		if (m_Spec.Type == WindowType::Fullscreen)
 		{
 			ChangeDisplaySettings(NULL, 0);
 		}

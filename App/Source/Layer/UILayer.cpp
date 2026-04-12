@@ -32,7 +32,7 @@ void UILayer::OnUpdate(double dt)
 {
 	if (m_bVisible)
 	{
-		if (!StaticUtils::IsCursorVisible())
+		if (!Core::StaticUtils::IsCursorVisible())
 		{
 			int Count;
 			do {
@@ -42,7 +42,7 @@ void UILayer::OnUpdate(double dt)
 	}
 	else
 	{
-		if (StaticUtils::IsCursorVisible())
+		if (Core::StaticUtils::IsCursorVisible())
 		{
 			int Count;
 			do {
@@ -57,12 +57,12 @@ void UILayer::OnRender(double dt)
 	if (!m_bVisible)
 		return;
 
-	RenderMenuWindow();
+	RenderScenesWindow();
 
 	if (!m_bVisible)
 		return;
 
-	RenderLightingWindow();
+	RenderSettingsWindow();
 }
 
 bool UILayer::OnKeyPressed(Core::KeyPressedEvent& e)
@@ -83,26 +83,21 @@ bool UILayer::OnMouseMoved(Core::MouseMovedEvent& e)
 	return m_bVisible;
 }
 
-void UILayer::RenderMenuWindow()
+void UILayer::RenderScenesWindow()
 {
 	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-	ImGui::Begin("Menu", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
+	ImGui::Begin("Scenes", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
 
 	ImVec2 buttonSize(200.f, 50.f);
 	if (ImGui::Button("Load Emerald Square Night", buttonSize))
 		LoadEmeraldSquareNight();
 
-	if (ImGui::Button("Load Emerald Square Dusk", buttonSize))
-		LoadEmeraldSquareDusk();
-
 	if (ImGui::Button("Load Bistro Exterior", buttonSize))
 		LoadBistroExterior();
 
-	if (ImGui::Button("Load Bistro Interior", buttonSize))
-		LoadBistroInterior();
 
-	if (ImGui::Button("Load Bistro Interior Wine", buttonSize))
-		LoadBistroInteriorWine();
+	if (ImGui::Button("Load model from file", buttonSize))
+		LoadFromFile();
 
 	if (ImGui::Button("Quit", buttonSize))
 		Core::Application::Get()->Stop();
@@ -110,7 +105,7 @@ void UILayer::RenderMenuWindow()
 	ImGui::End();
 }
 
-void UILayer::RenderLightingWindow()
+void UILayer::RenderSettingsWindow()
 {
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
 	ImVec2 workPos = viewport->WorkPos;   // top-left of usable area
@@ -121,7 +116,7 @@ void UILayer::RenderLightingWindow()
 	windowPos.y = workPos.y;
 	
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.f, 0.f));
-	ImGui::Begin("Lighting", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
+	ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);
 
 	auto camera = Core::Application::Get()->GetCamera();
 	ImGui::Text("Camera");
@@ -136,6 +131,38 @@ void UILayer::RenderLightingWindow()
 	ImGui::Separator();
 	ImGui::Dummy(ImVec2(0.f, 2.f));
 
+	ImGui::Text("Environment");
+	ImGui::SliderFloat("Ambient Strength", &Core::LightManager::GetAmbientStrengthRef(), 0.f, 0.1f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::ColorEdit3("Skybox Color", reinterpret_cast<float*>(&Core::Renderer::Get()->GetClearColor()));
+	ImGui::Separator();
+	ImGui::Dummy(ImVec2(0.f, 2.f));
+
+	ImGui::Text("Shadows");
+	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
+	const char* shadowMethodStrings[] = { "Shadow Maps", "Static ISMs", "Adaptive ISMs"};
+	Core::ShadowMethod& shadowMethod = pAppLayer->GetShadowMethodRef();
+	int currentShadowMethod = static_cast<int>(shadowMethod);
+	if (ImGui::Combo("Shadowing Method", &currentShadowMethod, shadowMethodStrings, IM_ARRAYSIZE(shadowMethodStrings)))
+		shadowMethod = static_cast<Core::ShadowMethod>(currentShadowMethod);
+	
+	ImGui::Dummy(ImVec2(0.f, 10.f));
+	RenderSMSettings(pAppLayer, shadowMethod);
+
+	if (shadowMethod == Core::ShadowMethod::StaticISM)
+	{
+		RenderISMSettings(pAppLayer, shadowMethod);
+	}
+	else if (shadowMethod == Core::ShadowMethod::AdaptiveISM)
+	{
+		RenderLowISMSettings(pAppLayer, shadowMethod);
+	}
+
+	ImGui::Separator();
+	ImGui::Dummy(ImVec2(0.f, 2.f));
+
+	auto& lights = Core::LightManager::GetLights();
+	ImGui::Text("Lights");
+
 	std::string activeLightsStr("Active lights: ");
 	UINT activeLightCount = 0u;
 	for (Core::Light* pLight : Core::LightManager::GetLights())
@@ -146,35 +173,6 @@ void UILayer::RenderLightingWindow()
 	activeLightsStr.append(std::to_string(activeLightCount));
 	ImGui::Text(activeLightsStr.c_str());
 
-	ImGui::SliderFloat("Ambient Strength", &Core::LightManager::GetAmbientStrengthRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-	ImGui::ColorEdit3("Skybox Color", reinterpret_cast<float*>(&Core::Renderer::Get()->GetClearColor()));
-	
-	ImGui::Dummy(ImVec2(0.f, 10.f));
-
-	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
-	const char* shadowTypeStrings[] = { "Shadow Map", "ISM" };
-	Core::ShadowType& shadowType = pAppLayer->GetShadowTypeRef();
-	int currentShadowType = static_cast<int>(shadowType);
-	if (ImGui::Combo("Shadow Type", &currentShadowType, shadowTypeStrings, IM_ARRAYSIZE(shadowTypeStrings)))
-		shadowType = static_cast<Core::ShadowType>(currentShadowType);
-	
-	if (shadowType == Core::ShadowType::ISM)
-	{
-		ImGui::SliderFloat("Spot Light Min Shadow Bias", &Core::LightManager::GetSpotLightMinBiasISMRef(), 0.0001f, 0.001f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::SliderFloat("Spot Light Max Shadow Bias", &Core::LightManager::GetSpotLightMaxBiasISMRef(), 0.0001f, 0.001f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::SliderFloat("Splat World Radius", &Core::RenderQueue::GetISMSplatWorldRadiusRef(), 0.01f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::SliderFloat("Push Coverage Threshold", &Core::RenderQueue::GetISMCoverageThresholdRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-	}
-	else if (shadowType == Core::ShadowType::ShadowMap)
-	{
-		ImGui::SliderFloat("Spot Light Min Shadow Bias", &Core::LightManager::GetSpotLightMinBiasShadowMapRef(), 0.0001f, 0.001f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::SliderFloat("Spot Light Max Shadow Bias", &Core::LightManager::GetSpotLightMaxBiasShadowMapRef(), 0.0001f, 0.001f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
-	}
-
-	ImGui::Separator();
-
-	auto& lights = Core::LightManager::GetLights();
-	ImGui::Text("Lights");
 	ImGui::BeginChild("##", ImVec2(0, 250), ImGuiChildFlags_Border, ImGuiWindowFlags_HorizontalScrollbar);
 	for (int i = 0; i < lights.size(); i++)
 	{
@@ -195,6 +193,42 @@ void UILayer::RenderLightingWindow()
 	}
 
 	ImGui::End();
+}
+
+void UILayer::RenderSMSettings(AppLayer* pAppLayer, Core::ShadowMethod shadowMethod)
+{
+	ImGui::Text("Shadow Map");
+	if (shadowMethod != Core::ShadowMethod::ShadowMap)
+	{
+		ImGui::SliderInt("Max Shadow Map Count", &pAppLayer->GetSMCountRef(), 0, MAX_SPOT_LIGHT_COUNT, "%d", ImGuiSliderFlags_AlwaysClamp);
+	}
+	ImGui::SliderFloat("Min Shadow Bias##SM", &Core::LightManager::GetSpotLightMinBiasShadowMapRef(), 0.0001f, 0.002f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SliderFloat("Max Shadow Bias##SM", &Core::LightManager::GetSpotLightMaxBiasShadowMapRef(), 0.0001f, 0.002f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+}
+
+void UILayer::RenderISMSettings(AppLayer* pAppLayer, Core::ShadowMethod shadowMethod)
+{
+	ImGui::Separator();
+	ImGui::Text("Standard ISM");
+	if (shadowMethod == Core::ShadowMethod::AdaptiveISM)
+	{
+		ImGui::SliderInt("Max Standard ISM Count", &pAppLayer->GetISMCountRef(), 0, MAX_SPOT_LIGHT_COUNT, "%d", ImGuiSliderFlags_AlwaysClamp);
+	}
+	ImGui::SliderFloat("Min Shadow Bias##ISM", &Core::LightManager::GetSpotLightMinBiasISMRef(), 0.0001f, 0.002f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SliderFloat("Max Shadow Bias##ISM", &Core::LightManager::GetSpotLightMaxBiasISMRef(), 0.0001f, 0.002f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SliderFloat("Splat World Radius##ISM", &Core::RenderQueue::GetISMSplatWorldRadiusRef(), 0.01f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SliderFloat("Push Coverage Threshold##ISM", &Core::RenderQueue::GetISMCoverageThresholdRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+}
+
+void UILayer::RenderLowISMSettings(AppLayer* pAppLayer, Core::ShadowMethod shadowMethod)
+{
+	RenderISMSettings(pAppLayer, shadowMethod);
+	ImGui::Separator();
+	ImGui::Text("Low Res ISM");
+	ImGui::SliderFloat("Min Shadow Bias##LowISM", &Core::LightManager::GetSpotLightMinBiasLowISMRef(), 0.0001f, 0.005f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SliderFloat("Max Shadow Bias##LowISM", &Core::LightManager::GetSpotLightMaxBiasLowISMRef(), 0.0001f, 0.005f, "%.4f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SliderFloat("Splat World Radius##LowISM", &Core::RenderQueue::GetLowISMSplatWorldRadiusRef(), 0.01f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SliderFloat("Push Coverage Threshold##LowISM", &Core::RenderQueue::GetLowISMCoverageThresholdRef(), 0.f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 }
 
 void UILayer::ToggleVisibility()

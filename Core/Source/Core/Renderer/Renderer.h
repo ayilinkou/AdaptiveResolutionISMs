@@ -94,8 +94,10 @@ namespace Core {
 		void SetPointCloudDensity(float newPointCloudDensity) { m_PointCloudDensity = newPointCloudDensity; }
 		void ResetPointCloudDensity() { m_PointCloudDensity = m_BasePointCloudDensity; }
 
-		// this shows VRAM usage for the adapter across all processes, not just this application
+		// TODO: this shows VRAM usage for the adapter across all processes, not just this application
 		VramInfo QueryVramUsage() const;
+
+		void UpdateLightsBuffer();
 
 	private:
 		struct AdapterAndOutput

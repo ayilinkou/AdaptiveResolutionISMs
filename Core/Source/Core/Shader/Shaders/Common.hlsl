@@ -16,6 +16,9 @@ Texture2DArray dirShadowMaps : register(t4);
 Texture2DArray spotShadowMaps : register(t5);
 TextureCubeArray pointShadowMaps : register(t6);
 
+Texture2DArray spotISMShadowMaps : register(t7);
+Texture2DArray spotLowISMShadowMaps : register(t8);
+
 struct SplatPixel
 {
 	float minDepth;
@@ -82,8 +85,21 @@ float3 _CalcSpotLight(uint lightIndex, float3 pixelColor, float3 worldPos, float
 	shadowUV.y = -lightNDC.y * 0.5f + 0.5f;
 	
 	float bias = CalcBias(spotLight.MinBias, spotLight.MaxBias, worldNormal, -spotLight.Dir);
-	float shadow = pcf(1, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotShadowMaps);
-
+	float shadow;
+	if (spotLight.ShadowType == SHADOW_TYPE_SM)
+	{
+		shadow = pcf(1, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotShadowMaps);
+	}
+	else if (spotLight.ShadowType == SHADOW_TYPE_ISM)
+	{
+		shadow = pcf(1, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotISMShadowMaps);
+	}
+	else
+	{
+		// Radius of 0 for no pcf here. Each texel will be covering large area in the final render, so want to only evaluate said texel
+		shadow = pcf(0, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotLowISMShadowMaps);
+	}
+	
 	if (shadow <= 0.f)
 		return float3(0.f, 0.f, 0.f);
 

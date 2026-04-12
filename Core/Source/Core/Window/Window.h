@@ -7,13 +7,20 @@
 #include <Windows.h>
 
 namespace Core {
+	enum class WindowType
+	{
+		Windowed,
+		Borderless,
+		Fullscreen
+	};
+	
 	struct WindowSpec
 	{
 		std::string Title = "Window";
 		uint32_t Width = 1280;
 		uint32_t Height = 720;
 		bool bUseVSync = false;
-		bool bFullscreen = false;
+		WindowType Type = WindowType::Windowed;
 	};
 
 	class Window

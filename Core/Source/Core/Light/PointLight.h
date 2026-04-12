@@ -24,6 +24,7 @@ namespace Core {
 
 		virtual void RenderControls() override;
 
+		void SetPosition(const DirectX::XMFLOAT3 pos);
 		void SetPosition(float x, float y, float z);
 		void SetAccumTransform(const DirectX::XMMATRIX& transform) { m_AccumTransform = transform; }
 		virtual void SetColor(float r, float g, float b) override { m_Data.Color = { r, g, b }; }

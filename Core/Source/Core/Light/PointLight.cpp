@@ -120,6 +120,11 @@ namespace Core {
 			UpdateProj();
 	}
 
+	void PointLight::SetPosition(const DirectX::XMFLOAT3 pos)
+	{
+		SetPosition(pos.x, pos.y, pos.z);
+	}
+
 	void PointLight::SetPosition(float x, float y, float z)
 	{
 		m_LocalPosition = { x, y, z };
