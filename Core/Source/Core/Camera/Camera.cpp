@@ -40,11 +40,19 @@ namespace Core {
 
 	void Camera::MoveCamera(float dt)
 	{
-		// TODO: this is happening every frame even if there's no movement vector
-		// Q and E are for moving along the Y axis only, therefore must not be transformed
+		if (m_wasdVector.x == 0.f &&
+			m_wasdVector.y == 0.f &&
+			m_wasdVector.z == 0.f &&
+			m_qeVector == 0.f)
+		{
+			return;
+		}
+		
+		// Q and E are for moving along the Y axis only, therefore only WASD must be transformed
 		DirectX::XMVECTOR v = DirectX::XMLoadFloat3(&m_wasdVector);
+		DirectX::XMVECTOR qe = DirectX::XMVectorSet(0.f, m_qeVector, 0.f, 0.f);
 		v = DirectX::XMVector3TransformCoord(v, m_RotationMatrix);
-		v = DirectX::XMVectorAdd(v, DirectX::XMVectorSet(0.f, m_qeVector, 0.f, 0.f));
+		v = DirectX::XMVectorAdd(v, qe);
 		v = DirectX::XMVector3Normalize(v);
 		v = DirectX::XMVectorScale(v, m_CameraSpeed * dt);
 

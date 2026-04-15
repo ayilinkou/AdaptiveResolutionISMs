@@ -6,13 +6,14 @@
 #include "Core/Utility/MyMacros.h"
 
 namespace Core {
-	const DirectX::XMMATRIX DirectionalLight::s_Proj = DirectX::XMMatrixOrthographicLH(300.f, 300.f, 0.1f, 1000.f);
+	const DirectX::XMMATRIX DirectionalLight::s_Proj = DirectX::XMMatrixOrthographicLH(100.f, 100.f, 0.1f, 1000.f);
 	const DirectX::XMMATRIX DirectionalLight::s_ProjT = DirectX::XMMatrixTranspose(DirectionalLight::s_Proj);
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> DirectionalLight::s_ShadowMapsSRV;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11DepthStencilView>> DirectionalLight::s_DSVs;
 	
 	DirectionalLight::DirectionalLight(const DirectX::XMFLOAT3 color, const DirectX::XMFLOAT3 dir)
 	{
+		m_Data = {};
 		m_Data.Color = color;
 		m_Data.ShadowMapRes = DirectionalLight::GetShadowMapRes();
 		m_Name = "Directional Light";

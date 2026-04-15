@@ -52,7 +52,7 @@ namespace Core {
 		static const DirectX::XMMATRIX s_Proj;
 		static const DirectX::XMMATRIX s_ProjT;
 
-		static constexpr UINT s_SHADOW_MAP_RES = 1024u;
+		static constexpr UINT s_SHADOW_MAP_RES = 2048u;
 		static constexpr D3D11_VIEWPORT s_ShadowMapViewport = { 0.f, 0.f, (float)s_SHADOW_MAP_RES, (float)s_SHADOW_MAP_RES, 0.f, 1.f };
 
 		friend class LightManager;

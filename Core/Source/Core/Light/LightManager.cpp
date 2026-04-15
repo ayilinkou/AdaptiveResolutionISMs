@@ -12,7 +12,7 @@ namespace Core {
 	Microsoft::WRL::ComPtr<ID3D11Buffer> LightManager::s_LightCBuffer;
 	float LightManager::s_AmbientStrength = 0.2f;
 	float LightManager::s_SpotLightMinBiasShadowMap = 0.0001f;
-	float LightManager::s_SpotLightMaxBiasShadowMap = 0.0006f;
+	float LightManager::s_SpotLightMaxBiasShadowMap = 0.0007f;
 	float LightManager::s_SpotLightMinBiasISM = 0.0003f;
 	float LightManager::s_SpotLightMaxBiasISM = 0.0008f;
 	float LightManager::s_SpotLightMinBiasLowISM = 0.0005f;

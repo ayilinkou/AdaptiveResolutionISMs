@@ -47,8 +47,8 @@ namespace Core {
 		static std::vector<Light*>& GetLights() { return s_Lights; }
 		static std::vector<PointLight*>& GetPointLights() { return s_PointLights; }
 		static std::vector<SpotLight*>& GetSpotLights() { return s_SpotLights; }
-		static std::vector<SpotLight*>& GetActiveSpotLights() { return s_SpotLights; }
 		static std::vector<DirectionalLight*>& GetDirectionalLights() { return s_DirLights; }
+		static std::vector<SpotLight*>& GetActiveSpotLights() { return s_ActiveSpotLights; }
 		static const LightBuffer& GetLightBufferData() { return s_LightBuffer; }
 		static Microsoft::WRL::ComPtr<ID3D11Buffer> GetLightCBuffer() { return s_LightCBuffer; }
 		static float& GetAmbientStrengthRef() { return s_AmbientStrength; }

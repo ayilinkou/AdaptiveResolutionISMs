@@ -34,7 +34,7 @@ namespace Core {
 		float NearZ;
 		float FarZ;
 		float Time;
-		DirectX::XMFLOAT3 Padding;
+		DirectX::XMFLOAT3 SkyColor = { 1.f, 1.f, 1.f };
 	};
 
 	struct RendererSpec

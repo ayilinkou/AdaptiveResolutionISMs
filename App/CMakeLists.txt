@@ -38,18 +38,4 @@ set_target_properties(App PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/App"
 )
 
-# Compiler options
-if(MSVC)
-    target_compile_options(App PRIVATE
-        /W3
-        /MP
-        /WX
-        /ZI
-    )
-else()
-    target_compile_options(App PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-    )
-endif()
+compile_options(App)

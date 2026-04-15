@@ -22,18 +22,4 @@ set_target_properties(RMAECalculator PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/RMAECalculator"
 )
 
-# Compiler options
-if(MSVC)
-    target_compile_options(RMAECalculator PRIVATE
-        /W3
-        /MP
-        /WX
-        /ZI
-    )
-else()
-    target_compile_options(RMAECalculator PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-    )
-endif()
+compile_options(RMAECalculator)

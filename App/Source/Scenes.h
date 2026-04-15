@@ -15,7 +15,7 @@ struct SceneInfo
 namespace Scenes {
 	constexpr SceneInfo EmeraldSquareDusk = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Dusk.fbx", "Models/EmeraldSquare_v4_1", 0.0005f };
 	constexpr SceneInfo BistroExterior = { "Models/Bistro_v5_2/BistroExterior.fbx", "Models/Bistro_v5_2", 0.1f };
-	constexpr SceneInfo SanMiguel = { "Models/San_Miguel/san-miguel-low-poly.obj", "Models/San_Miguel", 0.01f };
+	constexpr SceneInfo SanMiguel = { "Models/San_Miguel/san-miguel-low-poly.obj", "Models/San_Miguel", 1000.f };
 }
 
 DirectX::XMFLOAT3 operator+(const DirectX::XMFLOAT3& a, const DirectX::XMFLOAT3& b)
@@ -29,7 +29,7 @@ void UILayer::LoadEmeraldSquareNight()
 	if (pAppLayer)
 	{
 		pAppLayer->LoadScene(Scenes::EmeraldSquareDusk);
-		Core::LightManager::GetAmbientStrengthRef() = 0.001f;
+		Core::LightManager::GetAmbientStrengthRef() = 0.02f;
 		Core::Renderer::Get()->SetClearColor({ 0.05f, 0.05f, 0.1f, 1.f });
 
 		Core::Application::Get()->GetCamera()->SetPosition(-18.2f, 5.7f, -0.1f);
@@ -126,14 +126,19 @@ void UILayer::LoadBistroExterior()
 	if (pAppLayer)
 		pAppLayer->LoadScene(Scenes::BistroExterior);
 
-	Core::LightManager::GetAmbientStrengthRef() = 0.003f;
+	Core::LightManager::GetAmbientStrengthRef() = 0.03f;
 	DirectX::XMFLOAT4 skyboxColor = { 0.05f, 0.1f, 0.1f, 1.f };
 	Core::Renderer::Get()->SetClearColor(skyboxColor);
 
 	Core::Application::Get()->GetCamera()->SetPosition(-21.2f, 5.8f, -2.f);
 	Core::Application::Get()->GetCamera()->SetRotation(8.9f, -277.f);
 
-	Core::LightManager::GetDirectionalLights()[0]->SetActive(false);
+	for (auto* pDirLight : Core::LightManager::GetDirectionalLights())
+	{
+		pDirLight->SetDirection({ 0.09f, -0.71f, -0.7f });
+		pDirLight->SetColor(0.9f, 0.45f, 0.1f);
+		pDirLight->SetIntensity(0.1f);
+	}
 
 	DirectX::XMFLOAT3 color = { 1.f, 0.8f, 0.4f };
 	DirectX::XMFLOAT3 attenuation = { 1.f, 0.f, 0.f };
@@ -216,45 +221,94 @@ void UILayer::LoadSanMiguel()
 	if (pAppLayer)
 		pAppLayer->LoadScene(Scenes::SanMiguel);
 
-	Core::Application::Get()->GetCamera()->SetPosition(-21.2f, 5.8f, -2.f);
-	Core::Application::Get()->GetCamera()->SetRotation(8.9f, -277.f);
+	Core::Application::Get()->GetCamera()->SetPosition(6.34f, 1.73f, -0.69f);
+	Core::Application::Get()->GetCamera()->SetRotation(2.f, 119.f);
 
 	Core::LightManager::GetAmbientStrengthRef() = 0.01f;
-	DirectX::XMFLOAT4 skyboxColor = { 0.05f, 0.1f, 0.1f, 1.f };
+	DirectX::XMFLOAT4 skyboxColor = { 0.9f, 0.55f, 0.25f, 1.f };
 	Core::Renderer::Get()->SetClearColor(skyboxColor);
 
-	DirectX::XMFLOAT3 color = { 1.f, 1.f, 1.f };
-	DirectX::XMFLOAT3 dir = { 0.11f, -0.98f, -0.18f };
-	auto dirLight = std::make_unique<Core::DirectionalLight>(color, dir);
-	pAppLayer->AddLight(std::move(dirLight));
+	DirectX::XMFLOAT3 color = { 1.f, 0.8f, 0.4f };
+	DirectX::XMFLOAT3 dir = { -0.45f, -0.893f, 0.f };
+	DirectX::XMFLOAT3 attenuation = { 2.f, 0.f, 0.f };
+	float lightIntensity = 5.f;
+	float radius = 20.f;
+	float innerAngle = 82.5f;
+	float outerAngle = 89.f;
+	auto lampLight1_1 = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	lampLight1_1->SetName("Lamp Light 1_1");
+	lampLight1_1->SetPosition(25.1f, 2.8f, -2.f);
+	lampLight1_1->SetIntensity(lightIntensity);
+	lampLight1_1->SetRadius(radius);
+	lampLight1_1->SetAngles(innerAngle, outerAngle);
+	pAppLayer->AddLight(std::move(lampLight1_1));
 
-	color = { 1.f, 0.8f, 0.4f };
-	dir = { 0.f, -1.f, 0.f };
-	DirectX::XMFLOAT3 attenuation = { 1.f, 0.f, 0.f };
-	float lightIntensity = 1.f;
-	auto lightOne = std::make_unique<Core::SpotLight>(color, attenuation, dir);
-	lightOne->SetName("Light 1");
-	lightOne->SetPosition(-55.6f, 5.7f, 4.9f);
-	lightOne->SetIntensity(lightIntensity);
-	pAppLayer->AddLight(std::move(lightOne));
+	dir = { 0.45f, -0.893f, 0.f };
+	auto lampLight1_2 = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	lampLight1_2->SetName("Lamp Light 1_2");
+	lampLight1_2->SetPosition(25.3f, 3.7f, -2.f);
+	lampLight1_2->SetIntensity(lightIntensity);
+	lampLight1_2->SetRadius(radius);
+	lampLight1_2->SetAngles(innerAngle, outerAngle);
+	pAppLayer->AddLight(std::move(lampLight1_2));
 
-	auto lightTwo = std::make_unique<Core::SpotLight>(color, attenuation, dir);
-	lightTwo->SetName("Light 2");
-	lightTwo->SetPosition(-55.6f, 5.7f, -5.6f);
-	lightTwo->SetIntensity(lightIntensity);
-	pAppLayer->AddLight(std::move(lightTwo));
+	dir = { -0.45f, -0.893f, 0.f };
+	auto lampLight2_1 = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	lampLight2_1->SetName("Lamp Light 2_1");
+	lampLight2_1->SetPosition(25.1f, 9.f, -2.f);
+	lampLight2_1->SetIntensity(lightIntensity);
+	lampLight2_1->SetRadius(30.f);
+	lampLight2_1->SetAngles(innerAngle, outerAngle);
+	pAppLayer->AddLight(std::move(lampLight2_1));
 
-	auto lightThree = std::make_unique<Core::SpotLight>(color, attenuation, dir);
-	lightThree->SetName("Light 3");
-	lightThree->SetPosition(-66.2f, 5.7f, -5.6f);
-	lightThree->SetIntensity(lightIntensity);
-	pAppLayer->AddLight(std::move(lightThree));
+	dir = { 0.45f, -0.893f, 0.f };
+	auto lampLight2_2 = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	lampLight2_2->SetName("Lamp Light 2_2");
+	lampLight2_2->SetPosition(25.1f, 9.6f, -2.f);
+	lampLight2_2->SetIntensity(lightIntensity);
+	lampLight2_2->SetRadius(radius);
+	lampLight2_2->SetAngles(innerAngle, outerAngle);
+	pAppLayer->AddLight(std::move(lampLight2_2));
 
-	auto lightFour = std::make_unique<Core::SpotLight>(color, attenuation, dir);
-	lightFour->SetName("Light 4");
-	lightFour->SetPosition(-71.3f, 5.7f, -21.f);
-	lightFour->SetIntensity(lightIntensity);
-	pAppLayer->AddLight(std::move(lightFour));
+	attenuation = { 7.f, 0.f, 0.f };
+	dir = { 0.63f, -0.63f, -0.46f };
+	auto roomLight1 = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	roomLight1->SetName("Room Light 1");
+	roomLight1->SetPosition(6.7f, 4.6f, -0.7f);
+	roomLight1->SetIntensity(50.f);
+	roomLight1->SetRadius(30.f);
+	roomLight1->SetAngles(innerAngle, outerAngle);
+	pAppLayer->AddLight(std::move(roomLight1));
+
+	attenuation = { 2.f, 0.f, 0.f };
+	dir = { 0.685f, -0.685f, -0.25f };
+	auto roomLight2 = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	roomLight2->SetName("Room Light 2");
+	roomLight2->SetPosition(7.1f, 4.6f, -12.1f);
+	roomLight2->SetIntensity(50.f);
+	roomLight2->SetRadius(30.f);
+	roomLight2->SetAngles(innerAngle, outerAngle);
+	pAppLayer->AddLight(std::move(roomLight2));
+
+	attenuation = { 1.f, 0.f, 0.f };
+	dir = { 0.22f, -0.85f, -0.54f };
+	auto plantLight = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	plantLight->SetName("Plant Light");
+	plantLight->SetPosition(15.f, 4.f, 2.f);
+	plantLight->SetIntensity(10.f);
+	plantLight->SetRadius(20.f);
+	plantLight->SetAngles(0.f, 89.f);
+	pAppLayer->AddLight(std::move(plantLight));
+
+	attenuation = { 2.f, 0.f, 0.f };
+	dir = { 0.48f, -0.88f, 0.f };
+	auto alleyLight = std::make_unique<Core::SpotLight>(color, attenuation, dir);
+	alleyLight->SetName("Alley Light");
+	alleyLight->SetPosition(44.8f, 5.9f, -2.6f);
+	alleyLight->SetIntensity(5.f);
+	alleyLight->SetRadius(10.f);
+	alleyLight->SetAngles(0.f, 23.f);
+	pAppLayer->AddLight(std::move(alleyLight));
 
 	ToggleVisibility();
 }

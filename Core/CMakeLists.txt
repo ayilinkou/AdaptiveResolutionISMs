@@ -127,3 +127,5 @@ target_link_libraries(Core PUBLIC
 	dxguid
 	PointCloudConverter
 )
+
+compile_options(Core)

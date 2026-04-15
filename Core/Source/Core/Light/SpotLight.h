@@ -39,6 +39,7 @@ namespace Core {
 		void SetPosition(float x, float y, float z);
 		void SetDirection(float x, float y, float z);
 		void SetAngles(float inner, float outer);
+		void SetRadius(float radius) { m_Data.Radius = radius; }
 		void SetAttenuation(float quadratic, float linear, float constant) { m_Data.Attenuation = { quadratic, linear, constant }; }
 		void SetAccumTransform(const DirectX::XMMATRIX& transform) { m_AccumTransform = transform; }
 		void SetShadowType(ShadowType newShadowType) { m_Data.ShadowType = (UINT)newShadowType; }

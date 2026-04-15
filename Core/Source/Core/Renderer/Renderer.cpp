@@ -625,6 +625,7 @@ namespace Core {
 		m_GlobalCBufferData.Time = appTime;
 		m_GlobalCBufferData.ScreenWidth = m_Spec.WinSpec.Width;
 		m_GlobalCBufferData.ScreenHeight = m_Spec.WinSpec.Height;
+		m_GlobalCBufferData.SkyColor = { m_ClearColor.x, m_ClearColor.y, m_ClearColor.z };
 
 		HRESULT hResult;
 		D3D11_MAPPED_SUBRESOURCE mappedSubresource = {};

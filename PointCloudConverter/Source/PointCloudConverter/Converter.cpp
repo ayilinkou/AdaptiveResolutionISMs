@@ -55,6 +55,20 @@ std::unique_ptr<std::vector<DirectX::XMFLOAT3>> PointCloudConverter::LoadFromBuf
 		);
 
 		UINT indexOffset = pMesh->GetIndexOffset();
+
+		// include at least one point regardless of density
+		for (const DirectX::XMMATRIX& transform : transformsTT)
+		{
+			const UINT index = indices[indexOffset];
+			const DirectX::XMFLOAT3 v = vertices[index].Pos;
+
+			DirectX::XMVECTOR vec = DirectX::XMLoadFloat3(&v);
+			vec = DirectX::XMVector3TransformCoord(vec, transform);
+			DirectX::XMFLOAT3 transformedPoint;
+			DirectX::XMStoreFloat3(&transformedPoint, vec);
+			points->push_back(transformedPoint);
+		}
+
 		for (UINT i = 0u; i < pMesh->GetIndexCount(); i += 3)
 		{
 			const UINT index1 = indices[indexOffset + i + 0u];
@@ -65,10 +79,7 @@ std::unique_ptr<std::vector<DirectX::XMFLOAT3>> PointCloudConverter::LoadFromBuf
 			const DirectX::XMFLOAT3 v3 = vertices[index3].Pos;
 			const std::array<DirectX::XMFLOAT3, 3> face({ v1, v2, v3 });
 
-			for (const auto& transform : transformsTT)
-			{
-				AddPointCloudFace(points.get(), face, transformsTT, density);
-			}
+			AddPointCloudFace(points.get(), face, transformsTT, density);
 		}
 	}
 

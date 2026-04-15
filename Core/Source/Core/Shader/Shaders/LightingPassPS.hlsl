@@ -31,7 +31,7 @@ float4 main(PS_In p) : SV_TARGET
     
 	float3 light = CalcLight(albedo, worldPos, normalWS, pixelToCam, reflectance);
 	
-	float3 ambient = albedo * globalCBuffer.Lights.AmbientStrength;
+	float3 ambient = albedo * globalCBuffer.Lights.AmbientStrength * globalCBuffer.SkyColor;
 	float3 color = light + ambient + emissive;
 	
 	return float4(pow(color, 1.f / GAMMA), 1.f);

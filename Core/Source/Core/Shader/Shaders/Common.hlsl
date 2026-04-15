@@ -30,27 +30,37 @@ struct SplatPixel
 float pcf(int radius, uint shadowMapRes, float2 shadowUV, float bias, float currentDepth, uint lightIndex, Texture2DArray shadowMaps)
 {
 	// radius of 1 gives a 3x3 kernel
-	float2 texelSize = float2(1.f / (float)shadowMapRes, 1.f / (float)shadowMapRes);
+	float2 texelSize = float2(1.f / (float) shadowMapRes, 1.f / (float) shadowMapRes);
 	float shadow = 0.f;
-	float sampleCount = 0.f;
+	float totalWeight = 0.0f;
 
-	[loop]
-	for (int y = -radius; y <= radius; ++y)
+    // controls softness
+	float sigma = radius * 0.5f;
+	float twoSigmaSq = 2.0f * sigma * sigma;
+
+    [loop]
+	for (int y = -radius; y <= radius; y++)
 	{
-		[loop]
-		for (int x = -radius; x <= radius; ++x)
+        [loop]
+		for (int x = -radius; x <= radius; x++)
 		{
-			float2 offset = float2(x, y) * texelSize;
-			float2 uv = shadowUV + offset;
+			float2 offset = float2(x, y);
+			float distSq = dot(offset, offset);
 
+            // gaussian weight
+			float weight = exp(-distSq / twoSigmaSq);
+
+			float2 uv = shadowUV + offset * texelSize;
 			float depth = shadowMaps.Sample(shadowSampler, float3(uv, lightIndex)).r;
 
-			shadow += depth > currentDepth - bias ? 1.f : 0.f;
-			sampleCount += 1.f;
+			float sample = depth > currentDepth - bias ? 1.0f : 0.0f;
+
+			shadow += sample * weight;
+			totalWeight += weight;
 		}
 	}
 
-	return shadow / sampleCount;
+	return shadow / totalWeight;
 }
 
 float CalcBias(float minBias, float slopeBias, float3 worldNormal, float3 pixelToLight)
@@ -88,16 +98,15 @@ float3 _CalcSpotLight(uint lightIndex, float3 pixelColor, float3 worldPos, float
 	float shadow;
 	if (spotLight.ShadowType == SHADOW_TYPE_SM)
 	{
-		shadow = pcf(1, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotShadowMaps);
+		shadow = pcf(2, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotShadowMaps);
 	}
 	else if (spotLight.ShadowType == SHADOW_TYPE_ISM)
 	{
-		shadow = pcf(1, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotISMShadowMaps);
+		shadow = pcf(2, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotISMShadowMaps);
 	}
 	else
 	{
-		// Radius of 0 for no pcf here. Each texel will be covering large area in the final render, so want to only evaluate said texel
-		shadow = pcf(0, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotLowISMShadowMaps);
+		shadow = pcf(2, spotLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, spotLowISMShadowMaps);
 	}
 	
 	if (shadow <= 0.f)
@@ -183,8 +192,10 @@ float3 _CalcDirectionalLight(uint lightIndex, float3 pixelColor, float3 worldPos
 	shadowUV.x = lightNDC.x * 0.5f + 0.5f;
 	shadowUV.y = -lightNDC.y * 0.5f + 0.5f;
 	
-	float bias = CalcBias(0.0005f, 0.0001f, worldNormal, -dirLight.Dir);
-	float shadow = pcf(1, dirLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, dirShadowMaps);
+	float minBias = 0.0005f;
+	float maxBias = 0.0030f;
+	float bias = CalcBias(minBias, maxBias, worldNormal, -dirLight.Dir);
+	float shadow = pcf(5, dirLight.ShadowMapRes, shadowUV, bias, currentDepth, lightIndex, dirShadowMaps);
 	
 	if (shadow <= 0.f)
 		return float3(0.f, 0.f, 0.f);

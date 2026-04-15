@@ -30,6 +30,7 @@ namespace Core {
 	SpotLight::SpotLight(DirectX::XMFLOAT3 color, DirectX::XMFLOAT3 attenuation, DirectX::XMFLOAT3 dir)
 		: m_LocalPosition({ 0.f, 0.f, 0.f })
 	{
+		m_Data = {};
 		m_Data.Color = color;
 		m_Data.Attenuation = attenuation;
 		m_Data.Direction = dir;

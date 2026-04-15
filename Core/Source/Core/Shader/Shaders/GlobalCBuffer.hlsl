@@ -75,7 +75,7 @@ struct GlobalCBufferData
 	float NearZ;
 	float FarZ;
 	float Time;
-	float3 Padding;
+	float3 SkyColor;
 };
 
 cbuffer GlobalCBuffer : register(b0)
