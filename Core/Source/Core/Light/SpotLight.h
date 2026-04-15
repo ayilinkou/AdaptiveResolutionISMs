@@ -99,9 +99,9 @@ namespace Core {
 		static std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> s_LowISMMipSRVs;
 		static std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>>> s_LowISM_UAVs;
 
-		static constexpr UINT s_SHADOW_MAP_RES = 512u;
-		static constexpr UINT s_ISM_RES = 128u;
-		static constexpr UINT s_LOW_ISM_RES = 64u;
+		static constexpr UINT s_SHADOW_MAP_RES = 1024u;
+		static constexpr UINT s_ISM_RES = 256u;
+		static constexpr UINT s_LOW_ISM_RES = 128u;
 		static constexpr D3D11_VIEWPORT s_ShadowMapViewport = { 0.f, 0.f, (float)s_SHADOW_MAP_RES, (float)s_SHADOW_MAP_RES, 0.f, 1.f };
 		static constexpr D3D11_VIEWPORT s_ISMViewport = { 0.f, 0.f, (float)s_ISM_RES, (float)s_ISM_RES, 0.f, 1.f };
 		static constexpr D3D11_VIEWPORT s_LowISMViewport = { 0.f, 0.f, (float)s_LOW_ISM_RES, (float)s_LOW_ISM_RES, 0.f, 1.f };

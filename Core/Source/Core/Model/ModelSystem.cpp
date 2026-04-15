@@ -12,6 +12,10 @@ namespace Core {
 	void ModelSystem::UnregisterModel(Model* model)
 	{
 		s_Models[model->GetModelData()].erase(model);
+		if (s_Models[model->GetModelData()].empty())
+		{
+			s_Models.erase(model->GetModelData());
+		}
 	}
 
 	const std::unordered_set<Model*>& ModelSystem::GetModelsFromModelData(ModelData* pModelData)

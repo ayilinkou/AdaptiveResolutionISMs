@@ -3,11 +3,11 @@
 #include "Core/Utility/MyMacros.h"
 
 namespace Core {
-	std::vector<Light*> LightManager::s_Lights;
-	std::vector<PointLight*> LightManager::s_PointLights;
-	std::vector<SpotLight*> LightManager::s_SpotLights;
+	SwapbackArray<Light*> LightManager::s_Lights;
+	SwapbackArray<PointLight*> LightManager::s_PointLights;
+	SwapbackArray<SpotLight*> LightManager::s_SpotLights;
+	SwapbackArray<DirectionalLight*> LightManager::s_DirLights;
 	std::vector<SpotLight*> LightManager::s_ActiveSpotLights;
-	std::vector<DirectionalLight*> LightManager::s_DirLights;
 	LightBuffer LightManager::s_LightBuffer = {};
 	Microsoft::WRL::ComPtr<ID3D11Buffer> LightManager::s_LightCBuffer;
 	float LightManager::s_AmbientStrength = 0.2f;
@@ -36,29 +36,29 @@ namespace Core {
 
 	void LightManager::RegisterLight(Light* pLight)
 	{
-		s_Lights.push_back(pLight);
+		s_Lights.Pushback(pLight);
 
 		PointLight* pPointLight = dynamic_cast<PointLight*>(pLight);
 		if (pPointLight)
 		{
-			s_PointLights.push_back(pPointLight);
-			assert(s_PointLights.size() <= MAX_POINT_LIGHT_COUNT);
+			s_PointLights.Pushback(pPointLight);
+			assert(s_PointLights.Size() <= MAX_POINT_LIGHT_COUNT);
 			return;
 		}
 
 		SpotLight* pSpotLight = dynamic_cast<SpotLight*>(pLight);
 		if (pSpotLight)
 		{
-			s_SpotLights.push_back(pSpotLight);
-			assert(s_SpotLights.size() <= MAX_SPOT_LIGHT_COUNT);
+			s_SpotLights.Pushback(pSpotLight);
+			assert(s_SpotLights.Size() <= MAX_SPOT_LIGHT_COUNT);
 			return;
 		}
 
 		DirectionalLight* pDirLight = dynamic_cast<DirectionalLight*>(pLight);
 		if (pDirLight)
 		{
-			s_DirLights.push_back(pDirLight);
-			assert(s_DirLights.size() <= MAX_DIRECTIONAL_LIGHT_COUNT);
+			s_DirLights.Pushback(pDirLight);
+			assert(s_DirLights.Size() <= MAX_DIRECTIONAL_LIGHT_COUNT);
 			return;
 		}
 	}
@@ -68,7 +68,7 @@ namespace Core {
 		auto it = std::find(s_Lights.begin(), s_Lights.end(), pLight);
 		if (it != s_Lights.end())
 		{
-			s_Lights.erase(it);
+			s_Lights.RemoveAt(it);
 		}
 
 		PointLight* pPointLight = dynamic_cast<PointLight*>(pLight);
@@ -77,7 +77,7 @@ namespace Core {
 			auto it = std::find(s_PointLights.begin(), s_PointLights.end(), pPointLight);
 			if (it != s_PointLights.end())
 			{
-				s_PointLights.erase(it);
+				s_PointLights.RemoveAt(it);
 			}
 			return;
 		}
@@ -88,7 +88,7 @@ namespace Core {
 			auto it = std::find(s_SpotLights.begin(), s_SpotLights.end(), pSpotLight);
 			if (it != s_SpotLights.end())
 			{
-				s_SpotLights.erase(it);
+				s_SpotLights.RemoveAt(it);
 			}
 			return;
 		}
@@ -99,7 +99,7 @@ namespace Core {
 			auto it = std::find(s_DirLights.begin(), s_DirLights.end(), pDirLight);
 			if (it != s_DirLights.end())
 			{
-				s_DirLights.erase(it);
+				s_DirLights.RemoveAt(it);
 			}
 			return;
 		}
@@ -182,7 +182,7 @@ namespace Core {
 
 		UpdateSpotLights();
 
-		for (UINT i = 0u; i < s_DirLights.size(); i++)
+		for (UINT i = 0u; i < s_DirLights.Size(); i++)
 		{
 			if (s_LightBuffer.DirectionalLightCount == MAX_DIRECTIONAL_LIGHT_COUNT)
 				break;

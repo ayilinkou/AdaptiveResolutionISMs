@@ -8,6 +8,7 @@
 #include "DirectionalLight.h"
 #include "SpotLight.h"
 #include "Core/Utility/Constants.h"
+#include "Core/Utility/SwapbackArray.h"
 
 typedef unsigned int UINT;
 
@@ -44,10 +45,10 @@ namespace Core {
 		static void RegisterLight(Light* pLight);
 		static void UnregisterLight(Light* pLight);
 
-		static std::vector<Light*>& GetLights() { return s_Lights; }
-		static std::vector<PointLight*>& GetPointLights() { return s_PointLights; }
-		static std::vector<SpotLight*>& GetSpotLights() { return s_SpotLights; }
-		static std::vector<DirectionalLight*>& GetDirectionalLights() { return s_DirLights; }
+		static SwapbackArray<Light*>& GetLights() { return s_Lights; }
+		static SwapbackArray<PointLight*>& GetPointLights() { return s_PointLights; }
+		static SwapbackArray<SpotLight*>& GetSpotLights() { return s_SpotLights; }
+		static SwapbackArray<DirectionalLight*>& GetDirectionalLights() { return s_DirLights; }
 		static std::vector<SpotLight*>& GetActiveSpotLights() { return s_ActiveSpotLights; }
 		static const LightBuffer& GetLightBufferData() { return s_LightBuffer; }
 		static Microsoft::WRL::ComPtr<ID3D11Buffer> GetLightCBuffer() { return s_LightCBuffer; }
@@ -59,6 +60,10 @@ namespace Core {
 		static float& GetSpotLightMinBiasLowISMRef() { return s_SpotLightMinBiasLowISM; }
 		static float& GetSpotLightMaxBiasLowISMRef() { return s_SpotLightMaxBiasLowISM; }
 
+		static void SetSpotLightBiasShadowMap(float minBias, float maxBias) { s_SpotLightMinBiasShadowMap = minBias; s_SpotLightMaxBiasShadowMap = maxBias; }
+		static void SetSpotLightBiasISM(float minBias, float maxBias) { s_SpotLightMinBiasISM = minBias; s_SpotLightMaxBiasISM = maxBias; }
+		static void SetSpotLightBiasLowISM(float minBias, float maxBias) { s_SpotLightMinBiasLowISM = minBias; s_SpotLightMaxBiasLowISM = maxBias; }
+
 		static void UpdateSpotLights();
 		static void UpdateLightBufferData();
 		static void UpdateLightCBuffer(const DirectX::XMMATRIX& viewT, const DirectX::XMMATRIX& projT, UINT lightIndex);
@@ -67,10 +72,10 @@ namespace Core {
 		static void CreateBuffer();
 
 	private:
-		static std::vector<Light*> s_Lights;
-		static std::vector<PointLight*> s_PointLights;
-		static std::vector<SpotLight*> s_SpotLights;
-		static std::vector<DirectionalLight*> s_DirLights;
+		static SwapbackArray<Light*> s_Lights;
+		static SwapbackArray<PointLight*> s_PointLights;
+		static SwapbackArray<SpotLight*> s_SpotLights;
+		static SwapbackArray<DirectionalLight*> s_DirLights;
 		static LightBuffer s_LightBuffer;
 		static float s_AmbientStrength;
 		static float s_SpotLightMinBiasShadowMap;

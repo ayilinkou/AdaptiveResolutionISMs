@@ -71,6 +71,7 @@ set(SOURCES
 	Source/Core/Utility/Utility.h
 	Source/Core/Utility/Constants.h
 	Source/Core/Utility/Timer.h
+	Source/Core/Utility/SwapbackArray.h
 
 	Source/Core/Window/Window.h
 	Source/Core/Window/Window.cpp

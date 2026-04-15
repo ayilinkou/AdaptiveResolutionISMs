@@ -244,7 +244,7 @@ namespace Core {
 			}
 			case ShadowMethod::StaticISM:
 			{
-				StaticISMPass(LightManager::GetSpotLights());
+				StaticISMPass(LightManager::GetSpotLights().Data());
 				break;
 			}
 			case ShadowMethod::AdaptiveISM:
@@ -350,9 +350,9 @@ namespace Core {
 
 	void RenderQueue::ShadowMapPass()
 	{
-		DirShadowPass(LightManager::GetDirectionalLights());
-		SpotShadowPass(LightManager::GetSpotLights());
-		PointShadowPass(LightManager::GetPointLights());
+		DirShadowPass(LightManager::GetDirectionalLights().Data());
+		SpotShadowPass(LightManager::GetSpotLights().Data());
+		PointShadowPass(LightManager::GetPointLights().Data());
 	}
 
 	void RenderQueue::StaticISMPass(const std::vector<SpotLight*>& spotLights)
@@ -434,8 +434,8 @@ namespace Core {
 		}
 
 		// Directional and point lights will still use full res shadow maps
-		DirShadowPass(LightManager::GetDirectionalLights());
-		PointShadowPass(LightManager::GetPointLights());
+		DirShadowPass(LightManager::GetDirectionalLights().Data());
+		PointShadowPass(LightManager::GetPointLights().Data());
 
 		pContext->CSSetShaderResources(0u, 1u, nullSRVs);
 		pContext->CSSetUnorderedAccessViews(0u, 1u, nullUAVs, nullptr);
@@ -448,7 +448,7 @@ namespace Core {
 		ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
 		ID3D11ShaderResourceView* nullSRVs[] = { nullptr };
 
-		std::vector<SpotLight*> spotLights = LightManager::GetSpotLights();
+		const std::vector<SpotLight*>& spotLights = LightManager::GetSpotLights().Data();
 
 		if (!spotLights.empty())
 		{
@@ -515,8 +515,8 @@ namespace Core {
 		// Directional and point lights will still use full res shadow maps
 		if (spotLights.empty())
 		{
-			DirShadowPass(LightManager::GetDirectionalLights());
-			PointShadowPass(LightManager::GetPointLights());
+			DirShadowPass(LightManager::GetDirectionalLights().Data());
+			PointShadowPass(LightManager::GetPointLights().Data());
 		}
 
 		pContext->CSSetShaderResources(0u, 1u, nullSRVs);

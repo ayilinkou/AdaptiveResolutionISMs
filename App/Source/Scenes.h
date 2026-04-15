@@ -8,14 +8,52 @@ struct SceneInfo
 	std::string_view ModelPath;
 	std::string_view TexturesRoot;
 	const float PointCloudDensity = 0.f;
+	const float MinBiasShadowMap = 0.f;
+	const float MaxBiasShadowMap = 0.f;
+	const float MinBiasISM = 0.f;
+	const float MaxBiasISM = 0.f;
+	const float MinBiasLowISM = 0.f;
+	const float MaxBiasLowISM = 0.f;
 };
 
 #ifdef UILAYER_CPP
 
 namespace Scenes {
-	constexpr SceneInfo EmeraldSquareDusk = { "Models/EmeraldSquare_v4_1/EmeraldSquare_Dusk.fbx", "Models/EmeraldSquare_v4_1", 0.0005f };
-	constexpr SceneInfo BistroExterior = { "Models/Bistro_v5_2/BistroExterior.fbx", "Models/Bistro_v5_2", 0.1f };
-	constexpr SceneInfo SanMiguel = { "Models/San_Miguel/san-miguel-low-poly.obj", "Models/San_Miguel", 1000.f };
+	SceneInfo EmeraldSquare = {
+		"Models/EmeraldSquare_v4_1/EmeraldSquare_Dusk.fbx",
+		"Models/EmeraldSquare_v4_1",
+		0.001f,
+		0.0001f,
+		0.0002f,
+		0.0002f,
+		0.0012f,
+		0.0001f,
+		0.0020f
+	};
+
+	SceneInfo BistroExterior = {
+		"Models/Bistro_v5_2/BistroExterior.fbx",
+		"Models/Bistro_v5_2",
+		0.1f,
+		0.0001f,
+		0.0001f,
+		0.0001f,
+		0.0100f,
+		0.0001f,
+		0.0050f
+	};
+
+	SceneInfo SanMiguel = {
+		"Models/San_Miguel/san-miguel-low-poly.obj",
+		"Models/San_Miguel",
+		1000.f,
+		0.0001f,
+		0.0005f,
+		0.0001f,
+		0.0050f,
+		0.0001f,
+		0.0060f
+	};
 }
 
 DirectX::XMFLOAT3 operator+(const DirectX::XMFLOAT3& a, const DirectX::XMFLOAT3& b)
@@ -23,12 +61,12 @@ DirectX::XMFLOAT3 operator+(const DirectX::XMFLOAT3& a, const DirectX::XMFLOAT3&
 	return DirectX::XMFLOAT3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
-void UILayer::LoadEmeraldSquareNight()
+void UILayer::LoadEmeraldSquare()
 {
 	AppLayer* pAppLayer = Core::Application::Get()->GetLayer<AppLayer>();
 	if (pAppLayer)
 	{
-		pAppLayer->LoadScene(Scenes::EmeraldSquareDusk);
+		pAppLayer->LoadScene(Scenes::EmeraldSquare);
 		Core::LightManager::GetAmbientStrengthRef() = 0.02f;
 		Core::Renderer::Get()->SetClearColor({ 0.05f, 0.05f, 0.1f, 1.f });
 

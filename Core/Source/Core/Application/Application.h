@@ -53,6 +53,7 @@ namespace Core {
 
 		std::shared_ptr<Camera> GetCamera() { return m_Camera; }
 		double GetDeltaTime() const { return m_DeltaTime; }
+		double GetAverageFrameTime() const;
 
 		void RegisterNeedForCursor(void* ptr) { m_NeedsCursorVisible.insert(ptr); }
 		void UnregisterNeedForCursor(void* ptr);
@@ -61,7 +62,6 @@ namespace Core {
 		void RaiseEvent(Event& e);
 
 		void UpdateAppTime();
-		double GetAverageFrameTime();
 
 	private:
 		ApplicationSpec m_Spec;

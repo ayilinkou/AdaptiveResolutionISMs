@@ -1,6 +1,8 @@
+#ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
 #include <crtdbg.h>
+#endif
 
 #include "Core/Application/Application.h"
 #include "Layer/AppLayer.h"
@@ -15,10 +17,10 @@ int main()
 	Core::ApplicationSpec appSpec;
 	appSpec.Name = "Adaptive Resolution ISMs";
 	appSpec.WinSpec.Title = appSpec.Name;
-	appSpec.WinSpec.Width = 1600;
-	appSpec.WinSpec.Height = 900;
-	appSpec.WinSpec.Type = Core::WindowType::Windowed;
-	appSpec.WinSpec.bUseVSync = true;
+	appSpec.WinSpec.Width = 1920;
+	appSpec.WinSpec.Height = 1080;
+	appSpec.WinSpec.Type = Core::WindowType::Fullscreen;
+	appSpec.WinSpec.bUseVSync = false;
 	appSpec.RenderSpec.NearPlane = 0.1f;
 	appSpec.RenderSpec.FarPlane = 1000.f;
 	appSpec.RenderSpec.WinSpec = appSpec.WinSpec;

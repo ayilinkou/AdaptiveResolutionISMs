@@ -23,12 +23,15 @@ public:
 	virtual void OnRender(double dt) override;
 
 	void LoadScene(const SceneInfo& scene);
+	void UnloadScene();
 
 	void AddLight(std::unique_ptr<Core::Light>&& light);
 
 	Core::ShadowMethod& GetShadowMethodRef() { return m_ShadowMethod; }
 	int& GetSMCountRef() { return m_SMCount; }
 	int& GetISMCountRef() { return m_ISMCount; }
+
+	bool GetMovementEnabled() const { return m_bMovementEnabled; }
 
 private:
 	void Init();
@@ -47,4 +50,6 @@ private:
 
 	int m_SMCount = 1;
 	int m_ISMCount = 1;
+
+	bool m_bMovementEnabled = true;
 };

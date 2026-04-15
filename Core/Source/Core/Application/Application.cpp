@@ -165,7 +165,7 @@ namespace Core {
 		}
 	}
 
-	double Application::GetAverageFrameTime()
+	double Application::GetAverageFrameTime() const
 	{
 		double sum = 0.0;
 		for (double t : m_LastTenFrameTimes)

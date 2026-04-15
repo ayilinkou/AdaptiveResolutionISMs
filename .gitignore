@@ -22,3 +22,5 @@ Images/**
 # Ignore models
 App/Models/**
 App/imgui.ini
+
+*.lnk

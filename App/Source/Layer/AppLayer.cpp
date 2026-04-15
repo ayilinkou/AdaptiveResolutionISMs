@@ -3,6 +3,7 @@
 #include "Core/Application/Application.h"
 #include "Core/Renderer/Renderer.h"
 #include "Core/Utility/Timer.h"
+#include "Core/Light/LightManager.h"
 
 AppLayer::AppLayer(const std::string& layerName)
 	: Core::Layer(layerName)
@@ -63,20 +64,30 @@ void AppLayer::OnRender(double dt)
 void AppLayer::LoadScene(const SceneInfo& scene)
 {
 	Core::Renderer* pRenderer = Core::Renderer::Get();
-	pRenderer->ResetClearColor();
+	UnloadScene();
 
-	if (scene.PointCloudDensity > 0.f)
-	{
-		pRenderer->SetPointCloudDensity(scene.PointCloudDensity);
-	}
-	else
-	{
-		pRenderer->ResetPointCloudDensity();
-	}
+	scene.PointCloudDensity > 0.f ? pRenderer->SetPointCloudDensity(scene.PointCloudDensity) : pRenderer->ResetPointCloudDensity();
 
+	float minBias = scene.MinBiasShadowMap > 0.f ? scene.MinBiasShadowMap : Core::LightManager::GetSpotLightMinBiasShadowMapRef();
+	float maxBias = scene.MaxBiasShadowMap > 0.f ? scene.MaxBiasShadowMap : Core::LightManager::GetSpotLightMaxBiasShadowMapRef();
+	Core::LightManager::SetSpotLightBiasShadowMap(minBias, maxBias);
+
+	minBias = scene.MinBiasISM > 0.f ? scene.MinBiasISM : Core::LightManager::GetSpotLightMinBiasISMRef();
+	maxBias = scene.MaxBiasISM > 0.f ? scene.MaxBiasISM : Core::LightManager::GetSpotLightMaxBiasISMRef();
+	Core::LightManager::SetSpotLightBiasISM(minBias, maxBias);
+
+	minBias = scene.MinBiasLowISM > 0.f ? scene.MinBiasLowISM : Core::LightManager::GetSpotLightMinBiasLowISMRef();
+	maxBias = scene.MaxBiasLowISM > 0.f ? scene.MaxBiasLowISM : Core::LightManager::GetSpotLightMaxBiasLowISMRef();
+	Core::LightManager::SetSpotLightBiasLowISM(minBias, maxBias);
+
+	m_Models.emplace_back(std::make_unique<Core::Model>(scene.ModelPath, scene.TexturesRoot));
+}
+
+void AppLayer::UnloadScene()
+{
+	Core::Renderer::Get()->ResetClearColor();
 	m_Models.clear();
 	m_Lights.clear();
-	m_Models.emplace_back(std::make_unique<Core::Model>(scene.ModelPath, scene.TexturesRoot));
 }
 
 void AppLayer::AddLight(std::unique_ptr<Core::Light>&& light)
@@ -98,32 +109,54 @@ bool AppLayer::OnKeyPressed(Core::KeyPressedEvent& e)
 	}
 	case 'W':
 	{
-		Core::Application::Get()->GetCamera()->AddWASDVector({  0.f,  0.f,  1.f });
+		if (!m_bMovementEnabled)
+			return true;
+		Core::Application::Get()->GetCamera()->AddWASDVector({ 0.f,  0.f,  1.f });
 		return true;
 	}
 	case 'S':
 	{
+		if (!m_bMovementEnabled)
+			return true;
 		Core::Application::Get()->GetCamera()->AddWASDVector({  0.f,  0.f, -1.f });
 		return true;
 	}
 	case 'A':
 	{
+		if (!m_bMovementEnabled)
+			return true;
 		Core::Application::Get()->GetCamera()->AddWASDVector({ -1.f,  0.f,  0.f });
 		return true;
 	}
 	case 'D':
 	{
+		if (!m_bMovementEnabled)
+			return true;
 		Core::Application::Get()->GetCamera()->AddWASDVector({  1.f,  0.f,  0.f });
 		return true;
 	}
 	case 'Q':
 	{
+		if (!m_bMovementEnabled)
+			return true;
 		Core::Application::Get()->GetCamera()->AddQEVector(-1.f);
 		return true;
 	}
 	case 'E':
 	{
+		if (!m_bMovementEnabled)
+			return true;
 		Core::Application::Get()->GetCamera()->AddQEVector( 1.f);
+		return true;
+	}
+	case 'M':
+	{
+		m_bMovementEnabled = !m_bMovementEnabled;
+		return true;
+	}
+	case 'F':
+	{
+		std::cout << Core::Application::Get()->GetAverageFrameTime() << std::endl;
 		return true;
 	}
 	default:
@@ -133,6 +166,8 @@ bool AppLayer::OnKeyPressed(Core::KeyPressedEvent& e)
 
 bool AppLayer::OnMouseMoved(Core::MouseMovedEvent& e)
 {
+	if (!m_bMovementEnabled)
+		return true;
 	Core::Application::Get()->GetCamera()->RotateCamera((float)e.GetX(), (float)e.GetY());
 	return true;
 }

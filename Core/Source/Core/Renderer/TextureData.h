@@ -12,7 +12,7 @@ namespace Core {
 		friend class Texture;
 
 	public:
-		TextureData(const std::string& filepath, ID3D11ShaderResourceView* SRV)
+		TextureData(const std::string& filepath, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SRV)
 			: m_Filepath(filepath), m_SRV(SRV) {}
 
 	private:

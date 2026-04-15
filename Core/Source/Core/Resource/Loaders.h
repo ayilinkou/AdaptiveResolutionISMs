@@ -183,14 +183,14 @@ namespace Core::Loaders {
 				stbi_image_free(imageData);
 			}
 
-			ID3D11ShaderResourceView* textureView = nullptr;
+			Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureView;
 			ASSERT_NOT_FAILED(pDevice->CreateShaderResourceView(texture.Get(), nullptr, &textureView));
 
 			NAME_D3D_RESOURCE(texture, (std::string(filepath) + " texture").c_str());
 			NAME_D3D_RESOURCE(textureView, (std::string(filepath) + " texture SRV").c_str());
 
 			if (!bUseDirectXTex)
-				pContext->GenerateMips(textureView);
+				pContext->GenerateMips(textureView.Get());
 
 			return new TextureData(filepath, textureView);
 		}

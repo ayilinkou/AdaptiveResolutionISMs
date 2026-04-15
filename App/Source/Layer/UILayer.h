@@ -36,7 +36,7 @@ private:
 
 	void ToggleVisibility();
 
-	void LoadEmeraldSquareNight();
+	void LoadEmeraldSquare();
 	void LoadBistroExterior();
 	void LoadSanMiguel();
 	void LoadFromFile();
