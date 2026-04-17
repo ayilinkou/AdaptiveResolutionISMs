@@ -6,7 +6,7 @@ This project uses the following third-party libraries and models:
 
 stb_image is a single-header image loading library.<br>
 Website: https://github.com/nothings/stb<br>
-License: Public Domain / MIT License
+License: Dual license (Public Domain, MIT License). This project uses the Public Domain option.
 
 ## vcpkg
 
