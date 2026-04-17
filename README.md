@@ -1,4 +1,4 @@
-# Adaptive Resolution Imperfect Shadow Maps in ReSTIR-based Many-Light Rendering
+# Adaptive Resolution Imperfect Shadow Maps in Many-Light Rendering
 
 This project builds on the work by Zhang et al. (2025) and investigates the viability of adaptive resolution imperfect shadow maps.
 
