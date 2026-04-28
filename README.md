@@ -5,6 +5,22 @@ This project builds on the work by Zhang et al. (2025) and investigates the viab
 ## Prerequisites
 This project uses CMake as its build system. Please make sure you have CMake version 3.10 or newer and then run the SETUP.bat file. This will generate a Visual Studio solution in the build folder as well as download and extract the Amazon Lumberyard Bistro, NVIDIA Emerald Square and San Miguel 2.0 3d scenes.
 
+## Resulting Renders
+Adaptive ISM
+![Adaptive ISM - Bistro](Images/Data/Unnormalized/Bistro_AISM.png)
+Reference
+![Reference - Bistro](Images/Data/Unnormalized/Bistro_SM.png)
+
+Adaptive ISM
+![Adaptive ISM - San Miguel](Images/Data/Unnormalized/SanMiguel_AISM.png)
+Reference
+![Reference - San Miguel](Images/Data/Unnormalized/SanMiguel_SM.png)
+
+Adaptive ISM
+![Adaptive ISM - Emerald Square](Images/Data/Unnormalized/EmeraldSquare_AISM.png)
+Reference
+![Reference - Emerald Square](Images/Data/Unnormalized/EmeraldSquare_SM.png)
+
 ## Third Party Notices
 
 [Third Party Notices](THIRD_PARTY_NOTICES.md)
